@@ -60,7 +60,7 @@ public class Local {
             return false;
         }
         Local local = (Local) o;
-        return direccion.equals(local.direccion);
+        return direccion.equals(local.direccion) && nombre.equals(local.nombre);
     }
     
     @Override

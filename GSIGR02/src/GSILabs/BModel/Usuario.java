@@ -61,10 +61,6 @@ public abstract class Usuario {
         if (fechaNacimiento == null) {
             throw new IllegalArgumentException("La fecha de nacimiento no puede ser nula.");
         }
-        int edad = Period.between(fechaNacimiento, LocalDate.now()).getYears();
-        if (edad < 14) {
-            throw new IllegalArgumentException("No se permiten usuarios menores de 14 años.");
-        }
         this.fechaNacimiento = fechaNacimiento;
     }
 
