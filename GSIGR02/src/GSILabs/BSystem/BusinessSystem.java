@@ -16,6 +16,8 @@ import GSILabs.BModel.Reservable;
 import GSILabs.BModel.Restaurante;
 import GSILabs.BModel.Review;
 import GSILabs.BModel.Usuario;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
@@ -25,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jopendocument.dom.spreadsheet.Sheet;
+import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
  *
@@ -577,5 +581,68 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         });
         return pubsEnZona;
     }
+    
+    /**
+     * Carga un listado de bares desde un fichero ODS y los incorpora al sistema de negocio.
+     * El fichero debe contener una única hoja donde el nombre del bar se sitúa en la 
+     * primera columna y los datos restantes (dirección, localidad y provincia) a partir 
+     * de la segunda columna. El proceso finaliza al encontrar una fila vacía.
+     * 
+     * @param f el archivo ODS que contiene el listado de bares
+     * @return el número de bares incorporados con éxito al sistema de negocio
+     * @throws IOException si ocurre algún error durante la lectura o apertura del fichero
+     */
+    public int importaBares(File f) throws IOException{
+        int numeroBares = 0;
+
+        if (f == null || !f.exists()) {
+            return 0;
+        }
+
+        // Abrir el fichero ODS
+        SpreadSheet hoja = SpreadSheet.createFromFile(f);
+
+        // Obtener la primera hoja
+        Sheet tabla = hoja.getSheet(0);
+
+        for (int fila = 0; fila < tabla.getRowCount(); fila++) {
+
+            Object nombreBar = tabla.getCellAt(0,fila).getValue();
+
+            if (nombreBar == null || nombreBar.toString().trim().isEmpty()) {
+                break;
+            }
+
+            String nombre = nombreBar.toString().trim();
+
+            String direccionCompleta =
+                    tabla.getCellAt(1, fila).getValue().toString().trim();
+
+            String localidad =
+                    tabla.getCellAt(2, fila).getValue().toString().trim();
+
+            String provincia =
+                    tabla.getCellAt(3, fila).getValue().toString().trim();
+
+            int posicion = direccionCompleta.lastIndexOf(" ");
+
+            String calle = direccionCompleta.substring(0, posicion);
+            String numeroString = direccionCompleta.substring(posicion + 1);
+            int numero = Integer.parseInt(numeroString);
+
+            String descripcion = "";
+
+            // Construcción del bar
+            Bar bar = new Bar(nombre, new Direccion(localidad, provincia, calle, numero), descripcion);
+
+            // Intentar incorporar el bar al sistema
+            if (this.nuevoLocal(bar)) {
+                numeroBares++;
+            }
+        }
+
+        return numeroBares;
+    }
+
 
 }
