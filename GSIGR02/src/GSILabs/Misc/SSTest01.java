@@ -18,20 +18,23 @@ public class SSTest01 {
             {13, 14, 15, 16, 17, 18},
             {19, 20, 21, 22, 23, 24}
         };
+        final int FILAS = 4;
+        final int COLUMNAS = 6;
         
         try{
             File archivo = new File("test01.ods");
-            SpreadSheet spreadSheet = SpreadSheet.create(1,6,4);
-            Sheet sheet = spreadSheet.getSheet(0);
+            SpreadSheet spreadSheet = SpreadSheet.create(1,COLUMNAS,FILAS);
+            Sheet hoja = spreadSheet.getSheet(0);
 
-            for (int i=0;i<4;i++){
-                for (int j=0;j<6;j++){
-                    sheet.setValueAt(matriz[i][j], j, i);
+            for (int i=0;i<FILAS;i++){
+                for (int j=0;j<COLUMNAS;j++){
+                    hoja.setValueAt(matriz[i][j], j, i);
                 }
             }
 
             spreadSheet.saveAs(archivo);
         } catch(Exception e) {
+            System.err.println("ERROR al ejecutar el programa: "+e.getMessage()));
             e.printStackTrace();
         }
     }
