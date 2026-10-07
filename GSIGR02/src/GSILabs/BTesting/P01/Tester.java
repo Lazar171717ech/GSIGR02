@@ -1,6 +1,6 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+* Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+* Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package GSILabs.BTesting.P01;
 
@@ -12,10 +12,10 @@ import java.time.LocalTime;
 public class Tester {
 
     public static void main(String[] args) {
-        System.out.println("Iniciando batería de pruebas (S1 - S10)...\n");
+        System.out.println("Iniciando batería de pruebas (T1 - T10)...\n");
 
         BusinessSystem bs = new BusinessSystem();
-        
+
         Direccion dir1 = new Direccion("Pamplona", "Navarra", "Calle Mayor", 1);
         Direccion dir2 = new Direccion("Pamplona", "Navarra", "Calle Estafeta", 2);
         Direccion dir3 = new Direccion("Pamplona", "Navarra", "Pasea Sarasate", 3);
@@ -34,7 +34,6 @@ public class Tester {
         bs.nuevoUsuario(d1);
         bs.nuevoLocal(bar1);
 
-        
 // T1) Si introduce a un usuario, este puede ser luego localizado a partir de su ID
         bs.nuevoUsuario(c2);
         Usuario usuarioEncontrado = bs.obtenerUsuario("pablo210");
@@ -67,12 +66,15 @@ public class Tester {
         System.out.println("Test5: " + (t5 ? "ÉXITO" : "FALLO"));
 
 // T6) No se pueden hacer reservas para un local inexistente
-        Bar bar4 = new Bar("Copia Txoko", dir3, "Intento de copia");
-        boolean reservaLocalInexistente = bs.nuevaReserva(c1, bar4, LocalDate.now().plusDays(5), LocalTime.of(21, 0));
+//Bar3 se instancia en el test 3, sin embargo no se puede añadir a la base de datos al compartir direccion con otro.
+//Por lo tanto funciona como inexistente
+        boolean reservaLocalInexistente = bs.nuevaReserva(c1, bar3, LocalDate.now().plusDays(5), LocalTime.of(21, 0));
         boolean t6 = (reservaLocalInexistente == false);
         System.out.println("Test6: " + (t6 ? "ÉXITO" : "FALLO"));
 
 // T7) No se pueden hacer reservas para un local inexistente, aunque esté en la misma dir que otro existente
+//Bar3 se instancia en el test 3, sin embargo no se puede añadir a la base de datos al compartir direccion con otro.
+//Por lo tanto funciona como inexistente
         boolean reservaLocalFantasmaDirReal = bs.nuevaReserva(c1, bar3, LocalDate.now().plusDays(2), LocalTime.of(14, 0));
         boolean t7 = (reservaLocalFantasmaDirReal == false);
         System.out.println("Test7: " + (t7 ? "ÉXITO" : "FALLO"));
@@ -85,6 +87,7 @@ public class Tester {
         System.out.println("Test8: " + (t8 ? "ÉXITO" : "FALLO"));
 
 // T9) No se pueden añadir cuatro dueños a un bar
+//Dueño1 ya está en la base de datos
         bs.nuevoUsuario(d2);
         bs.nuevoUsuario(d3);
         bs.nuevoUsuario(d4);
