@@ -34,7 +34,7 @@ public class SSTest01 {
 
             spreadSheet.saveAs(archivo);
         } catch(Exception e) {
-            System.err.println("ERROR al ejecutar el programa: "+e.getMessage()));
+            System.err.println("ERROR al ejecutar el programa: "+e.getMessage());
             e.printStackTrace();
         }
     }
