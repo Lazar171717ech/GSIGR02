@@ -644,5 +644,17 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return numeroBares;
     }
 
+    public Local[] obtenerTodosLosLocales() {
+        return locales.toArray(new Local[locales.size()]); // Devolvemos una copia para que no se modifique la original 
+    }
 
+    public Dueño[] obtenerDueñosDeLocal(Local l) {
+        if (propietariosDeLocal.containsKey(l)) {
+            Set<Dueño> dueños = propietariosDeLocal.get(l);
+            return dueños.toArray(new Dueño[dueños.size()]);
+        }
+        return new Dueño[0];
+    }
+    
+    
 }
