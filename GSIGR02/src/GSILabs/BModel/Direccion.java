@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 /**
- * Representa una Dirección postal.
- * @author Aimar Ijurko
+ * Representación de la clase dirección.
+ * @author Pablo Lázaro
  */
 public class Direccion {
     
