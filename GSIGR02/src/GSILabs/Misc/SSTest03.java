@@ -1,7 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package GSILabs.Misc;
 
 import java.io.File;
@@ -10,11 +7,25 @@ import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
- *
+ * Implementación del test 3 para hojas de cálculo.
+ * Lee un archivo ODS existente (test02.ods), extrae los valores numéricos
+ * de una celda con desplazamiento y los carga en una matriz para mostrarlos
+ * por pantalla.
+ * 
  * @author juang
  */
 public class SSTest03 {
 
+    /**
+     * Constructor por defecto de SSTest03.
+     */
+    public SSTest03() {
+    }
+
+    /**
+     * Método principal que ejecuta la prueba de lectura y volcado de datos desde el archivo ODS.
+     * @param args los argumentos de la línea de comandos
+     */
     public static void main(String[] args) {
         final int FILAS = 4;
         final int COLUMNAS = 6;

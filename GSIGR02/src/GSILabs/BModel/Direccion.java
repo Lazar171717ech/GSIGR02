@@ -1,15 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GSILabs.BModel;
 
 import java.time.LocalDate;
 import java.util.Objects;
 
 /**
- * @author Pablo Lazaro
- * Implementación de la clase Direccion.
+ * Representa una Dirección postal.
+ * @author Aimar Ijurko
  */
 public class Direccion {
     
@@ -18,18 +14,27 @@ public class Direccion {
     private String calle;
     private int numero;
 
+    /**
+     * Constructor de Direccion.
+     * @param localidad la localidad de la dirección
+     * @param provincia la provincia de la dirección
+     * @param calle la calle de la dirección
+     * @param numero el número de la calle
+     * @throws IllegalArgumentException si la localidad, provincia o calle son nulas o vacías, 
+     *                                  o si el número es menor o igual a 0.
+     */
     public Direccion(String localidad, String provincia, String calle, int numero){
-        if(localidad == null){
-            throw new IllegalArgumentException("La localidad no puede ser nula");
+        if(localidad == null || localidad.trim().isEmpty()){
+            throw new IllegalArgumentException("La localidad no puede ser nula ni vacía.");
         }
-        if(provincia == null){
-            throw new IllegalArgumentException("La provincia no puede ser nula");
+        if(provincia == null || provincia.trim().isEmpty()){
+            throw new IllegalArgumentException("La provincia no puede ser nula ni vacía.");
         }
-        if(calle == null){
-            throw new IllegalArgumentException("La calle no puede ser nula");
+        if(calle == null || calle.trim().isEmpty()){
+            throw new IllegalArgumentException("La calle no puede ser nula ni vacía.");
         }
         if(numero <= 0){
-            throw new IllegalArgumentException("El numero no puede ser nulo");
+            throw new IllegalArgumentException("El número debe ser mayor que cero.");
         }
         
         this.localidad = localidad;
@@ -38,20 +43,84 @@ public class Direccion {
         this.numero = numero;
     }
 
+    /**
+     * Obtiene la localidad de la dirección.
+     * @return la localidad
+     */
     public String getLocalidad(){
         return localidad;
     }
 
+    /**
+     * Establece la localidad.
+     * @param localidad la nueva localidad
+     * @throws IllegalArgumentException si la localidad es nula o vacía
+     */
+    public void setLocalidad(String localidad) {
+        if(localidad == null || localidad.trim().isEmpty()){
+            throw new IllegalArgumentException("La localidad no puede ser nula ni vacía.");
+        }
+        this.localidad = localidad;
+    }
+
+    /**
+     * Obtiene la provincia de la dirección.
+     * @return la provincia
+     */
     public String getProvincia(){
         return provincia;
     }
 
+    /**
+     * Establece la provincia.
+     * @param provincia la nueva provincia
+     * @throws IllegalArgumentException si la provincia es nula o vacía
+     */
+    public void setProvincia(String provincia) {
+        if(provincia == null || provincia.trim().isEmpty()){
+            throw new IllegalArgumentException("La provincia no puede ser nula ni vacía.");
+        }
+        this.provincia = provincia;
+    }
+
+    /**
+     * Obtiene la calle de la dirección.
+     * @return la calle
+     */
     public String getCalle(){
         return calle;
     }
 
+    /**
+     * Establece la calle.
+     * @param calle la nueva calle
+     * @throws IllegalArgumentException si la calle es nula o vacía
+     */
+    public void setCalle(String calle) {
+        if(calle == null || calle.trim().isEmpty()){
+            throw new IllegalArgumentException("La calle no puede ser nula ni vacía.");
+        }
+        this.calle = calle;
+    }
+
+    /**
+     * Obtiene el número de la calle.
+     * @return el número
+     */
     public int getNumero(){
         return numero;
+    }
+
+    /**
+     * Establece el número.
+     * @param numero el nuevo número
+     * @throws IllegalArgumentException si el número es menor o igual a 0
+     */
+    public void setNumero(int numero) {
+        if(numero <= 0){
+            throw new IllegalArgumentException("El número debe ser mayor que cero.");
+        }
+        this.numero = numero;
     }
 
     @Override
@@ -70,11 +139,13 @@ public class Direccion {
     }
     
     @Override
-    public int hashCode() { // Paso todos los strings a minusculas para no crear conficltos con el equals
-        return Objects.hash(localidad.toLowerCase(), 
-                provincia.toLowerCase(), 
-                calle.toLowerCase(), 
-                numero);
+    public int hashCode() {
+        return Objects.hash(
+            localidad == null ? null : localidad.toLowerCase(), 
+            provincia == null ? null : provincia.toLowerCase(), 
+            calle == null ? null : calle.toLowerCase(), 
+            numero
+        );
     }
     
     @Override

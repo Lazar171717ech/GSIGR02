@@ -1,12 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
+
 package GSILabs.BModel;
 
 /**
- *
- * @author alumno
+ * Interfaz que representa a aquellos locales del sistema que pueden ser objeto de una reserva.
+ * @author Aimar Ijurko
  */
 public interface Reservable {
     

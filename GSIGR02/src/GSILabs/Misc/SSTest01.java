@@ -1,25 +1,32 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package GSILabs.Misc;
 import java.io.File;
 import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
+
 /**
- *
+ * Implementación del test 1 para el paso a hojas de cálculo.
+ * Creamos una matriz de 4 filas y 6 columnas con los números del 1 al 24,
+ * creamos un archivo .ods y una hoja de cálculo, escribimos los contenidos
+ * de la matriz y guardamos el archivo. En caso de error, se detiene la ejecución
+ * y se muestra en pantalla.
+ * 
  * @author Pablo Lazaro
- * Implementacion del test 1 para el paso a hojas de calculo:
- * Creamos una matriz de 4 filas y 6 columnas con los numeros de 1 al 24
- * Creamos un archivo .ods y creamos una hoja de calculo
- * Abrimos la hoja 1 y vamos escribiendo los contenidos de la matriz
- * Por ultimo guardamos la hoja de calculo en el archivo creado
- * En caso de error detendra la ejecucion y muestra en pantalla el error
  */
 public class SSTest01 {  
     
     private static final String NOMBRE_ARCHIVO = "test01.ods";
     
+    /**
+     * Constructor por defecto de SSTest01.
+     */
+    public SSTest01() {
+    }
+    
+    /**
+     * Método principal que ejecuta la prueba de creación y escritura del archivo ODS.
+     * @param args los argumentos de la línea de comandos
+     */
     public static void main(String[] args){
         int[][] matriz = {
             {1, 2, 3, 4, 5, 6},
@@ -50,4 +57,3 @@ public class SSTest01 {
         }
     }
 }
-

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GSILabs.BModel;
 
 import java.util.ArrayList;
@@ -9,22 +5,40 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- *
- * @author alumno
+ * Representa un Bar que hereda de Local y es Reservable.
+ * @author Aimar Ijurko
  */
-public class Bar extends Local implements Reservable{
+public class Bar extends Local implements Reservable {
     
    private List<String> especialidades;
-    
+   
+    /**
+     * Constructor de Bar.
+     * @param nombre el nombre del local
+     * @param direccion la dirección del local
+     * @param descripcion la descripción del local
+     */
     public Bar(String nombre, Direccion direccion, String descripcion) {
         super(nombre, direccion, descripcion);
         this.especialidades = new ArrayList<>();
     }
 
+    /**
+     * Agrega una nueva especialidad a la lista del bar.
+     * @param especialidad la especialidad a añadir
+     * @throws IllegalArgumentException si la especialidad es nula o está vacía
+     */
     public void agregarEspecialidad(String especialidad) {
+        if (especialidad == null || especialidad.trim().isEmpty()) {
+            throw new IllegalArgumentException("La especialidad no puede ser nula ni vacía.");
+        }
         this.especialidades.add(especialidad);
     }
     
+    /**
+     * Obtiene la lista de especialidades del bar.
+     * @return una lista con las especialidades del bar
+     */
     public List<String> getEspecialidades() {
         return especialidades;
     }
@@ -56,7 +70,4 @@ public class Bar extends Local implements Reservable{
         final Bar other = (Bar) obj;
         return Objects.equals(this.especialidades, other.especialidades);
     }
-    
-    
-    
 }

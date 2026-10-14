@@ -1,7 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package GSILabs.Misc;
 
 import java.awt.Color;
@@ -12,11 +9,24 @@ import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
- *
+ * Implementación del test 2 para hojas de cálculo.
+ * Genera una matriz aleatoria de números y los escribe en una hoja ODS
+ * aplicando desplazamientos y colores de fondo según el valor de cada celda.
+ * 
  * @author juang
  */
 public class SSTest02 {
 
+    /**
+     * Constructor por defecto de SSTest02.
+     */
+    public SSTest02() {
+    }
+
+    /**
+     * Método principal que ejecuta la prueba de creación y formato del archivo ODS.
+     * @param args los argumentos de la línea de comandos
+     */
     public static void main(String[] args) {
         final int FILAS = 4;
         final int COLUMNAS = 6;

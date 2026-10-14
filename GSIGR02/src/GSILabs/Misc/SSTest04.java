@@ -22,9 +22,22 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 /**
  * Clase ejecutable para el Ejercicio 5 de la Práctica 02.
  * Genera un sistema de negocio, introduce datos y los exporta a un archivo ODS.
+ * 
+ * @author Urko Ines y Joel Vilchez
  */
 public class SSTest04 {
 
+    /**
+     * Constructor por defecto de SSTest04.
+     */
+    public SSTest04() {
+    }
+
+    /**
+     * Método principal que ejecuta la lógica de creación del sistema, 
+     * población de locales y dueños, y volcado a un archivo ODS con múltiples hojas.
+     * @param args los argumentos de la línea de comandos
+     */
     public static void main(String[] args) {
         
         // 1. Instanciar el sistema principal
@@ -97,7 +110,7 @@ public class SSTest04 {
         sheetBar.setValueAt("ESPECIALIDAD 3 DEL BAR", 7, rowBar);
         sheetBar.setValueAt("DUEÑO 2 DEL BAR", 8, rowBar);
         sheetBar.setValueAt("DUEÑO 3 DEL BAR", 9, rowBar);
-        rowBar++;   
+        rowBar++;    
         
         sheetRest.setValueAt("NOMBRE DEL RESTAURANTE", 0, rowRest);
         sheetRest.setValueAt("DIRECCIÓN DEL RESTAURANTE", 1, rowRest);
@@ -117,7 +130,7 @@ public class SSTest04 {
         sheetPub.setValueAt("HORA DE APERTURA DEL PUB", 5, rowPub);
         sheetPub.setValueAt("HORA DE CLAUSURA DEL PUB", 6, rowPub);
         sheetPub.setValueAt("DUEÑO 2 DEL PUB", 7, rowPub);
-        sheetPub.setValueAt("DUEÑO 3 DEL PUB", 8, rowPub);
+        sheetPub.setValueAt("DUEÑO 3 DEL PUB", 8, rowPub);        
         rowPub++;
         
         for (Local l : localesGuardados) {

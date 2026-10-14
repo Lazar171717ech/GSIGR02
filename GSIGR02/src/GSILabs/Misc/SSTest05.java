@@ -12,10 +12,18 @@ import java.io.IOException;
  * Clase de prueba para el Ejercicio 6 de la Práctica 02.
  * Su propósito es comprobar el funcionamiento de la importación masiva 
  * de bares desde un archivo en formato ODS hacia el sistema de negocio
- * utilizando la funcion importaBares().
- * @author alumno
+ * utilizando la función importaBares().
+ * 
+ * @author Aimar Ijurko
  */
 public class SSTest05 {
+    
+    /**
+     * Constructor por defecto de SSTest05.
+     */
+    public SSTest05() {
+    }
+
     /**
      * Método principal que ejecuta la prueba de importación de bares.
      * Instancia el sistema de negocio, carga el archivo ODS correspondiente

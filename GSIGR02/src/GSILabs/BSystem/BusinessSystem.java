@@ -1,7 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package GSILabs.BSystem;
 
 import GSILabs.BModel.Bar;
@@ -31,8 +28,10 @@ import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
- *
- * @author juang
+ * Clase principal que implementa la lógica de negocio del sistema LeisureOffice
+ * y los servicios de consulta (LookupService).
+ * 
+ * @author Aimar Ijurko
  */
 public class BusinessSystem implements LeisureOffice, LookupService {
 
@@ -42,6 +41,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     private Map<Review, Contestacion> contestaciones = new HashMap<>();
     private Map<Local, Set<Dueño>> propietariosDeLocal = new HashMap<>();
     private List<Reserva> reservas = new ArrayList<>();
+
+    /**
+     * Constructor por defecto de BusinessSystem.
+     */
+    public BusinessSystem() {
+    }
 
     @Override
     public boolean nuevoUsuario(Usuario u) {
@@ -57,6 +62,36 @@ public class BusinessSystem implements LeisureOffice, LookupService {
 
     @Override
     public boolean eliminaUsuario(Usuario u) {
+        if (u == null || !usuarios.contains(u)) {
+            return false;
+        }
+
+        if (u instanceof Cliente) {
+            Cliente cliente = (Cliente) u;
+            // 1. Eliminar reservas hechas por este cliente
+            reservas.removeIf(reserva -> reserva.getCliente().equals(cliente));
+            
+            // 2. Eliminar reviews escritas por este cliente (y sus contestaciones asociadas)
+            reviews.removeIf(review -> {
+                if (review.getCliente().equals(cliente)) {
+                    contestaciones.remove(review);
+                    return true;
+                }
+                return false;
+            });
+            
+        } else if (u instanceof Dueño) {
+            Dueño dueño = (Dueño) u;
+            // 1. Eliminar contestaciones hechas por este dueño
+            contestaciones.values().removeIf(contestacion -> contestacion.getDueño().equals(dueño));
+            
+            // 2. Desasociar al dueño de los locales que posea
+            for (Map.Entry<Local, Set<Dueño>> entry : propietariosDeLocal.entrySet()) {
+                entry.getValue().remove(dueño);
+            }
+        }
+
+        // 3. Finalmente, eliminar al usuario de la lista principal
         return usuarios.remove(u);
     }
 
@@ -68,6 +103,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         
         int index = usuarios.indexOf(u);
         if (index == -1) return false;
+        
+        // Punto 6: Comprobar que el nuevo nick no pertenezca ya a otro usuario
+        if (!u.getNick().equals(nuevoU.getNick()) && existeNick(nuevoU.getNick())) {
+            return false;
+        }
         
         int edad = Period.between(nuevoU.getFechaNacimiento(), LocalDate.now()).getYears();
         if (edad < 14) return false;
@@ -105,6 +145,10 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public boolean nuevaReview(Review r) {
         if (r == null || r.getCliente() == null || r.getLocal() == null) {
+            return false;
+        }
+        // Punto 4: Comprobar que el cliente y el local estén dados de alta
+        if (!usuarios.contains(r.getCliente()) || !locales.contains(r.getLocal())) {
             return false;
         }
         if (existeRewiew(r.getCliente(), r.getLocal(), r.getFechaVisita())) {
@@ -197,8 +241,25 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     }
 
     @Override
-    public boolean eliminarLocal(Local l) {
-        return locales.remove(l);
+    public boolean eliminarLocal(Local local) {
+        if (local == null || !locales.contains(local)) {
+            return false;
+        }
+        
+        // Punto 9: Borrado en cascada para mantener la coherencia de datos
+        reservas.removeIf(reserva -> reserva.getLocal().equals(local));
+
+        reviews.removeIf(review -> {
+            if (review.getLocal().equals(local)) {
+                contestaciones.remove(review);
+                return true;
+            }
+            return false;
+        });
+
+        propietariosDeLocal.remove(local);
+
+        return locales.remove(local);
     }
 
     @Override
@@ -223,9 +284,14 @@ public class BusinessSystem implements LeisureOffice, LookupService {
             Set<Dueño> dueños = new HashSet<>();
             dueños.add(d);
             propietariosDeLocal.put(l, dueños);
+            return true;
         }
-        if (propietariosDeLocal.get(l).size() < 3) {
-            propietariosDeLocal.get(l).add(d);
+        Set<Dueño> dueñosActuales = propietariosDeLocal.get(l);
+        if (dueñosActuales.contains(d)) {
+            return true;
+        }
+        if (dueñosActuales.size() < 3) {
+            dueñosActuales.add(d);
             return true;
         }
         return false;
@@ -262,25 +328,27 @@ public class BusinessSystem implements LeisureOffice, LookupService {
 
         locales.set(index, nuevoL);
 
-        Set<Dueño> dueños = propietariosDeLocal.get(viejoL);
-        propietariosDeLocal.remove(viejoL);
-        propietariosDeLocal.put(nuevoL, dueños);
+        // Punto 8: Evitar guardar un valor null en el mapa si el local no tenía dueños
+        Set<Dueño> dueños = propietariosDeLocal.remove(viejoL);
+        if (dueños != null) {
+            propietariosDeLocal.put(nuevoL, dueños);
+        }
         return true;
     }
 
     @Override
     public Review[] verReviews(Local l) {
-        Review[] revs = null;
-        if (locales.contains(l)) {
-            int i = 0;
-            for (Review review : reviews) {
-                if (review.getLocal().equals(l)) {
-                    revs[i] = review;
-                    i++;
-                }
+        // Puntos 1 y 2: Solucionar el NullPointerException y devolver array vacío si no hay reviews
+        if (l == null || !locales.contains(l)) {
+            return null;
+        }
+        List<Review> revsList = new ArrayList<>();
+        for (Review review : reviews) {
+            if (review.getLocal().equals(l)) {
+                revsList.add(review);
             }
         }
-        return revs;
+        return revsList.toArray(new Review[revsList.size()]);
     }
 
     @Override
@@ -390,6 +458,9 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Bar[] listarBares(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
+        if (localesEnZona == null) {
+            return new Bar[0];
+        }
 
         List<Bar> baresFiltrados = new ArrayList<>();
         for (Local local : localesEnZona) {
@@ -403,6 +474,9 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Restaurante[] listarRestaurantes(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
+        if (localesEnZona == null) {
+            return new Restaurante[0];
+        }
 
         List<Restaurante> restauranteFiltrados = new ArrayList<>();
         for (Local local : localesEnZona) {
@@ -416,6 +490,9 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Pub[] listarPubs(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
+        if (localesEnZona == null) {
+            return new Pub[0];
+        }
 
         List<Pub> pubsFiltrados = new ArrayList<>();
         for (Local local : localesEnZona) {
@@ -500,7 +577,7 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Local[] obtenerLocalesOrdenados(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
-        if (localesEnZona.length == 0) {
+        if (localesEnZona == null || localesEnZona.length == 0) {
             return localesEnZona;
         }
 
@@ -540,7 +617,7 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Bar[] obtenerBaresOrdenados(String ciudad, String provincia) {
         Bar[] baresEnZona = listarBares(ciudad, provincia);
-        if (baresEnZona.length == 0) {
+        if (baresEnZona == null || baresEnZona.length == 0) {
             return baresEnZona;
         }
 
@@ -555,7 +632,7 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Restaurante[] obtenerRestaurantesOrdenados(String ciudad, String provincia) {
         Restaurante[] restauranteEnZona = listarRestaurantes(ciudad, provincia);
-        if (restauranteEnZona.length == 0) {
+        if (restauranteEnZona == null || restauranteEnZona.length == 0) {
             return restauranteEnZona;
         }
 
@@ -570,13 +647,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public Pub[] obtenerPubOrdenados(String ciudad, String provincia) {
         Pub[] pubsEnZona = listarPubs(ciudad, provincia);
-        if (pubsEnZona.length == 0) {
+        if (pubsEnZona == null || pubsEnZona.length == 0) {
             return pubsEnZona;
         }
 
-        java.util.Arrays.sort(pubsEnZona, (bar1, bar2) -> {
-            float nota1 = obtenerValoracionMedia(bar1);
-            float nota2 = obtenerValoracionMedia(bar2);
+        java.util.Arrays.sort(pubsEnZona, (pub1, pub2) -> {
+            float nota1 = obtenerValoracionMedia(pub1);
+            float nota2 = obtenerValoracionMedia(pub2);
             return Float.compare(nota2, nota1);
         });
         return pubsEnZona;
@@ -584,13 +661,9 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     
     /**
      * Carga un listado de bares desde un fichero ODS y los incorpora al sistema de negocio.
-     * El fichero debe contener una única hoja donde el nombre del bar se sitúa en la 
-     * primera columna y los datos restantes (dirección, localidad y provincia) a partir 
-     * de la segunda columna. El proceso finaliza al encontrar una fila vacía.
-     * 
-     * @param f el archivo ODS que contiene el listado de bares
-     * @return el número de bares incorporados con éxito al sistema de negocio
-     * @throws IOException si ocurre algún error durante la lectura o apertura del fichero
+     * @param f el archivo ODS
+     * @return el número de bares incorporados
+     * @throws IOException si ocurre algún error de E/S
      */
     public int importaBares(File f) throws IOException{
         int numeroBares = 0;
@@ -644,10 +717,19 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return numeroBares;
     }
 
+    /**
+     * Obtiene un array con todos los locales registrados.
+     * @return un array de locales
+     */
     public Local[] obtenerTodosLosLocales() {
         return locales.toArray(new Local[locales.size()]); // Devolvemos una copia para que no se modifique la original 
     }
 
+    /**
+     * Obtiene los dueños asociados a un local.
+     * @param l el local
+     * @return un array de dueños
+     */
     public Dueño[] obtenerDueñosDeLocal(Local l) {
         if (propietariosDeLocal.containsKey(l)) {
             Set<Dueño> dueños = propietariosDeLocal.get(l);
@@ -655,6 +737,4 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         }
         return new Dueño[0];
     }
-    
-    
 }
