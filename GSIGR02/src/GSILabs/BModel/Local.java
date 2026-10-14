@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 /**
+ * @author Pablo Lazaro
  * Implementación de la clase Local.
  */
 public class Local {

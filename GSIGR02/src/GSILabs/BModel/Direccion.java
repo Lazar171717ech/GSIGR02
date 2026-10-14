@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 /**
+ * @author Pablo Lazaro
  * Implementación de la clase Direccion.
  */
 public class Direccion {
@@ -69,8 +70,11 @@ public class Direccion {
     }
     
     @Override
-    public int hashCode() {
-        return Objects.hash(localidad, provincia, calle, numero);
+    public int hashCode() { // Paso todos los strings a minusculas para no crear conficltos con el equals
+        return Objects.hash(localidad.toLowerCase(), 
+                provincia.toLowerCase(), 
+                calle.toLowerCase(), 
+                numero);
     }
     
     @Override

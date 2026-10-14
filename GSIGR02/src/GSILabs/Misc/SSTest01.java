@@ -8,9 +8,18 @@ import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 /**
  *
- * @author alumno
+ * @author Pablo Lazaro
+ * Implementacion del test 1 para el paso a hojas de calculo:
+ * Creamos una matriz de 4 filas y 6 columnas con los numeros de 1 al 24
+ * Creamos un archivo .ods y creamos una hoja de calculo
+ * Abrimos la hoja 1 y vamos escribiendo los contenidos de la matriz
+ * Por ultimo guardamos la hoja de calculo en el archivo creado
+ * En caso de error detendra la ejecucion y muestra en pantalla el error
  */
 public class SSTest01 {  
+    
+    private static final String NOMBRE_ARCHIVO = "test01.ods";
+    
     public static void main(String[] args){
         int[][] matriz = {
             {1, 2, 3, 4, 5, 6},
@@ -18,11 +27,12 @@ public class SSTest01 {
             {13, 14, 15, 16, 17, 18},
             {19, 20, 21, 22, 23, 24}
         };
-        final int FILAS = 4;
-        final int COLUMNAS = 6;
+        
+        final int FILAS = matriz.length;
+        final int COLUMNAS = matriz[0].length;
         
         try{
-            File archivo = new File("test01.ods");
+            File archivo = new File(NOMBRE_ARCHIVO);
             SpreadSheet spreadSheet = SpreadSheet.create(1,COLUMNAS,FILAS);
             Sheet hoja = spreadSheet.getSheet(0);
 
@@ -33,6 +43,7 @@ public class SSTest01 {
             }
 
             spreadSheet.saveAs(archivo);
+            System.out.println("El programa se ha ejecutado correctamente");
         } catch(Exception e) {
             System.err.println("ERROR al ejecutar el programa: "+e.getMessage());
             e.printStackTrace();
