@@ -37,7 +37,7 @@ public interface LookupService {
      * @param l Local de interés.
      * @param edadEntre Edad minima del rango (incluida)
      * @param edadHasta Edad maxima del rango (incluida)
-     * @return 
+     * @return La valoración media de las reviews en ese rango de edad, 0 si no hay reviews o -1 si el local no existe.
      */
     public float obtenerValoracionMedia(Local l, int edadEntre, int edadHasta);
     
