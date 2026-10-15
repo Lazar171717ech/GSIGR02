@@ -5,7 +5,7 @@ import java.time.LocalDate;
 
 /**
  * Clase que representa a un Dueño (tipo de Usuario).
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Dueño extends Usuario {
 

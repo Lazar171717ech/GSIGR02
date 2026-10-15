@@ -8,6 +8,7 @@
 package GSILabs.BSystem;
 
 import GSILabs.BModel.*;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -280,5 +281,14 @@ public interface LeisureOffice {
      * @return La lista de bares, potencialmente de longitud 0.
      */
     public Pub[] listarPubs(String ciudad, String provincia);
+
+    /**
+     * Carga un listado de bares desde un fichero ODS y los incorpora al sistema.
+     * La primera columna de cada fila debe contener el nombre del bar.
+     * La lectura se detiene en la primera fila cuya primera columna esté vacía.
+     * @param f fichero ODS a importar; debe existir y ser no nulo
+     * @return número de bares incorporados con éxito al sistema
+     */
+    public int importaBares(File f);
     
 }

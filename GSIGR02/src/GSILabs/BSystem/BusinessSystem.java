@@ -31,7 +31,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * Clase principal que implementa la lógica de negocio del sistema LeisureOffice
  * y los servicios de consulta (LookupService).
  * 
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class BusinessSystem implements LeisureOffice, LookupService {
 
@@ -661,57 +661,68 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     
     /**
      * Carga un listado de bares desde un fichero ODS y los incorpora al sistema de negocio.
-     * @param f el archivo ODS
-     * @return el número de bares incorporados
-     * @throws IOException si ocurre algún error de E/S
+     * El fichero debe tener una única hoja con el nombre del bar en la primera columna;
+     * la lectura se detiene en la primera fila cuya primera columna esté vacía.
+     * Las filas con datos inválidos o incompletos se descartan sin interrumpir la importación.
+     * @param f fichero ODS a importar; debe existir y ser no nulo
+     * @return número de bares incorporados con éxito al sistema
      */
-    public int importaBares(File f) throws IOException{
+    public int importaBares(File f) {
         int numeroBares = 0;
 
         if (f == null || !f.exists()) {
             return 0;
         }
 
-        // Abrir el fichero ODS
-        SpreadSheet hoja = SpreadSheet.createFromFile(f);
+        try {
+            SpreadSheet hoja = SpreadSheet.createFromFile(f);
+            Sheet tabla = hoja.getSheet(0);
 
-        // Obtener la primera hoja
-        Sheet tabla = hoja.getSheet(0);
+            for (int fila = 0; fila < tabla.getRowCount(); fila++) {
 
-        for (int fila = 0; fila < tabla.getRowCount(); fila++) {
+                Object nombreBar = tabla.getCellAt(0, fila).getValue();
 
-            Object nombreBar = tabla.getCellAt(0,fila).getValue();
+                // La primera celda vacía indica el fin de los datos
+                if (nombreBar == null || nombreBar.toString().trim().isEmpty()) {
+                    break;
+                }
 
-            if (nombreBar == null || nombreBar.toString().trim().isEmpty()) {
-                break;
+                try {
+                    String nombre = nombreBar.toString().trim();
+
+                    // Leer celdas de dirección con comprobación de nulidad
+                    Object celda1 = tabla.getCellAt(1, fila).getValue();
+                    Object celda2 = tabla.getCellAt(2, fila).getValue();
+                    Object celda3 = tabla.getCellAt(3, fila).getValue();
+
+                    if (celda1 == null || celda2 == null || celda3 == null) {
+                        continue;
+                    }
+
+                    String direccionCompleta = celda1.toString().trim();
+                    String localidad         = celda2.toString().trim();
+                    String provincia         = celda3.toString().trim();
+
+                    // La dirección tiene el formato "Nombre de calle número"
+                    int posicion = direccionCompleta.lastIndexOf(" ");
+                    if (posicion < 0) {
+                        continue;
+                    }
+                    String calle        = direccionCompleta.substring(0, posicion);
+                    String numeroString = direccionCompleta.substring(posicion + 1);
+                    int numero = Integer.parseInt(numeroString);
+
+                    Bar bar = new Bar(nombre, new Direccion(localidad, provincia, calle, numero), "");
+
+                    if (this.nuevoLocal(bar)) {
+                        numeroBares++;
+                    }
+                } catch (IllegalArgumentException e) {
+                    // Fila con datos inválidos: se descarta y se continúa con la siguiente
+                }
             }
-
-            String nombre = nombreBar.toString().trim();
-
-            String direccionCompleta =
-                    tabla.getCellAt(1, fila).getValue().toString().trim();
-
-            String localidad =
-                    tabla.getCellAt(2, fila).getValue().toString().trim();
-
-            String provincia =
-                    tabla.getCellAt(3, fila).getValue().toString().trim();
-
-            int posicion = direccionCompleta.lastIndexOf(" ");
-
-            String calle = direccionCompleta.substring(0, posicion);
-            String numeroString = direccionCompleta.substring(posicion + 1);
-            int numero = Integer.parseInt(numeroString);
-
-            String descripcion = "";
-
-            // Construcción del bar
-            Bar bar = new Bar(nombre, new Direccion(localidad, provincia, calle, numero), descripcion);
-
-            // Intentar incorporar el bar al sistema
-            if (this.nuevoLocal(bar)) {
-                numeroBares++;
-            }
+        } catch (IOException e) {
+            System.err.println("Error al leer el fichero ODS: " + e.getMessage());
         }
 
         return numeroBares;

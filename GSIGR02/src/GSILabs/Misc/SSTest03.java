@@ -8,11 +8,11 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
  * Implementación del test 3 para hojas de cálculo.
- * Lee un archivo ODS existente (test02.ods), extrae los valores numéricos
- * de una celda con desplazamiento y los carga en una matriz para mostrarlos
- * por pantalla.
- * 
- * @author juang
+ * Lee el archivo test02.ods generado por SSTest02, extrae la matriz de 4x6
+ * números a partir de la cuarta fila y sexta columna (desplazamientos hard-coded),
+ * y muestra los valores recuperados por consola.
+ *
+ * @author Equipo2
  */
 public class SSTest03 {
 
@@ -24,6 +24,8 @@ public class SSTest03 {
 
     /**
      * Método principal que ejecuta la prueba de lectura y volcado de datos desde el archivo ODS.
+     * Los desplazamientos están codificados de forma explícita para coincidir con los
+     * usados en SSTest02 (fila=3, columna=5).
      * @param args los argumentos de la línea de comandos
      */
     public static void main(String[] args) {
@@ -34,12 +36,13 @@ public class SSTest03 {
         try {
             File archivo = new File("test02.ods");
             if (!archivo.exists()) {
-                System.err.println("El archivo test02.ods no existe.");
+                System.err.println("El archivo test02.ods no existe. Ejecute primero SSTest02.");
                 return;
             }
             
-            int desplazamientoFila = 5;
-            int desplazamientoColumna = 3;
+            // Desplazamientos idénticos a los de SSTest02
+            int desplazamientoFila    = 3;
+            int desplazamientoColumna = 5;
 
             SpreadSheet spreadSheet = SpreadSheet.createFromFile(archivo);
             Sheet hoja = spreadSheet.getSheet(0);
@@ -47,12 +50,11 @@ public class SSTest03 {
             for (int i = 0; i < FILAS; i++) {
                 for (int j = 0; j < COLUMNAS; j++) {
                     int filaOrigen = i + desplazamientoFila;
-                    int colOrigen = j + desplazamientoColumna;
+                    int colOrigen  = j + desplazamientoColumna;
 
                     Object valorCelda = hoja.getValueAt(colOrigen, filaOrigen);
 
-                    /* Si el valor de la celda es vacio pone un 0, que de otra manera no se
-                     podría generar por que la matriz se rellena con valores del 1 al 24 */
+                    // Las celdas vacías se tratan como 0 (valor imposible en SSTest02, rango 1-24)
                     int valorEntero = 0;
                     if (valorCelda != null && !valorCelda.toString().isEmpty()) {
                         valorEntero = (int) Double.parseDouble(valorCelda.toString());
@@ -62,15 +64,16 @@ public class SSTest03 {
                 }
             }
             
+            System.out.println("Matriz leída de test02.ods:");
             for (int i = 0; i < FILAS; i++) {
                 System.out.print("| ");
                 for (int j = 0; j < COLUMNAS; j++) {
                     System.out.print(matriz[i][j] + " | ");
                 }
-                System.out.println("");
+                System.out.println();
             }
         } catch (IOException | NumberFormatException e) {
-            System.err.println("Error al leer el archivo");
+            System.err.println("Error al leer el archivo: " + e.getMessage());
         }
     }
 }

@@ -11,7 +11,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * de la matriz y guardamos el archivo. En caso de error, se detiene la ejecución
  * y se muestra en pantalla.
  * 
- * @author Pablo Lazaro
+ * @author Equipo2
  */
 public class SSTest01 {  
     

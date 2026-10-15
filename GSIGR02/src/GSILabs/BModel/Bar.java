@@ -2,11 +2,10 @@ package GSILabs.BModel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Representa un Bar que hereda de Local y es Reservable.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Bar extends Local implements Reservable {
     
@@ -48,9 +47,14 @@ public class Bar extends Local implements Reservable {
         return "Bar{" + super.toString() + ", especialidades=" + especialidades + '}';
     }
 
+    /**
+     * Dos bares son iguales si tienen el mismo nombre y la misma dirección
+     * (criterio heredado de Local). Las especialidades son atributos secundarios
+     * que no forman parte de la identidad del local.
+     */
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(super.hashCode(), especialidades);
+        return super.hashCode();
     }
 
     @Override
@@ -58,16 +62,9 @@ public class Bar extends Local implements Reservable {
         if (this == obj) {
             return true;
         }
-        if (obj == null) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        final Bar other = (Bar) obj;
-        return Objects.equals(this.especialidades, other.especialidades);
+        return super.equals(obj);
     }
 }

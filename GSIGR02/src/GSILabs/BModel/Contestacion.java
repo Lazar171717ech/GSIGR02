@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * Representa una Contestación realizada por un Dueño a una Review existente.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Contestacion {
 

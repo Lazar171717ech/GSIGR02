@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /**
  * Clase abstracta Usuario, esto se debe a que no puede existir un Usuario, sino que un Cliente o un Dueño.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public abstract class Usuario {
     

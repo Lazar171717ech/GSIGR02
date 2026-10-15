@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /**
  * Representa una Reserva realizada por un Cliente en un Local reservable.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Reserva {
     private LocalDate fecha;

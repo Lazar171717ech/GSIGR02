@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Representa una opinión (Review) dejada en el sistema por un Cliente acerca de
  * un Local.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Review {
 

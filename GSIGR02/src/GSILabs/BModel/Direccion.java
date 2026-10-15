@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * Representación de la clase dirección.
- * @author Pablo Lázaro
+ * @author Equipo2
  */
 public class Direccion {
     

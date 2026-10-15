@@ -7,7 +7,7 @@ import java.time.LocalTime;
 
 /**
  * Clase ejecutable para la batería de pruebas (T1 - T10) y controles positivos de la Práctica.
- * @author juang
+ * @author Equipo2
  */
 public class Tester {
 

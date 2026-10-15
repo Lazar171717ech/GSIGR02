@@ -2,7 +2,7 @@ package GSILabs.BModel;
 
 /**
  * Representa un Restaurante que hereda de Local y es Reservable.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Restaurante extends Local implements Reservable{
     
@@ -106,9 +106,14 @@ public class Restaurante extends Local implements Reservable{
         this.capacidadMaximaMesa = capacidadMaximaMesa;
     }
 
+    /**
+     * Dos restaurantes son iguales si tienen el mismo nombre y la misma dirección
+     * (criterio heredado de Local). El precio y las capacidades son atributos
+     * operacionales que no forman parte de la identidad del local.
+     */
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(super.hashCode(), precioEstimado, capacidadMaximaTotal, capacidadMaximaMesa);
+        return super.hashCode();
     }
 
     @Override
@@ -116,23 +121,10 @@ public class Restaurante extends Local implements Reservable{
         if (this == obj) {
             return true;
         }
-        if (obj == null) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        final Restaurante other = (Restaurante) obj;
-        if (Float.floatToIntBits(this.precioEstimado) != Float.floatToIntBits(other.precioEstimado)) {
-            return false;
-        }
-        if (this.capacidadMaximaTotal != other.capacidadMaximaTotal) {
-            return false;
-        }
-        return this.capacidadMaximaMesa == other.capacidadMaximaMesa;
+        return super.equals(obj);
     }
 
     @Override

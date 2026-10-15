@@ -1,11 +1,10 @@
 package GSILabs.BModel;
 
 import java.time.LocalTime;
-import java.util.Objects;
 
 /**
  * Representa un Pub que hereda de Local.
- * @author Aimar Ijurko
+ * @author Equipo2
  */
 public class Pub extends Local {
     
@@ -78,9 +77,14 @@ public class Pub extends Local {
         return "Pub{" + super.toString() + ", horaApertura=" + horaApertura + ", horaClausura=" + horaClausura + '}';
     }
 
+    /**
+     * Dos pubs son iguales si tienen el mismo nombre y la misma dirección
+     * (criterio heredado de Local). Los horarios son atributos secundarios
+     * que no forman parte de la identidad del local.
+     */
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(super.hashCode(), horaApertura, horaClausura);
+        return super.hashCode();
     }
 
     @Override
@@ -88,19 +92,9 @@ public class Pub extends Local {
         if (this == obj) {
             return true;
         }
-        if (obj == null) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        final Pub other = (Pub) obj;
-        if (!Objects.equals(this.horaApertura, other.horaApertura)) {
-            return false;
-        }
-        return Objects.equals(this.horaClausura, other.horaClausura);
+        return super.equals(obj);
     }
 }
