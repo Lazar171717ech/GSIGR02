@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Representa un Bar que hereda de Local y es Reservable.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Bar extends Local implements Reservable {
     
@@ -16,6 +16,8 @@ public class Bar extends Local implements Reservable {
      * @param nombre el nombre del local
      * @param direccion la dirección del local
      * @param descripcion la descripción del local
+     * @throws IllegalArgumentException si el nombre es nulo o vacío, la dirección es nula,
+     *                                  o la descripción supera los 300 caracteres.
      */
     public Bar(String nombre, Direccion direccion, String descripcion) {
         super(nombre, direccion, descripcion);
@@ -31,7 +33,10 @@ public class Bar extends Local implements Reservable {
         if (especialidad == null || especialidad.trim().isEmpty()) {
             throw new IllegalArgumentException("La especialidad no puede ser nula ni vacía.");
         }
-        this.especialidades.add(especialidad);
+        String tag = especialidad.trim();
+        if (!this.especialidades.contains(tag)) {
+            this.especialidades.add(tag);
+        }
     }
     
     /**

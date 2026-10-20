@@ -33,7 +33,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * Gestiona el almacenamiento de usuarios, locales, reservas, reviews y contestaciones,
  * garantizando la coherencia de los datos mediante políticas de validación y borrado en cascada.
  * 
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class BusinessSystem implements LeisureOffice, LookupService {
 
@@ -128,6 +128,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
             return false;
         }
         
+        // No se permite cambiar el tipo de usuario (Cliente a Dueño o viceversa)
+        if (!u.getClass().equals(nuevoU.getClass())) {
+            return false;
+        }
+        
         int index = usuarios.indexOf(u);
         if (index == -1) return false;
         
@@ -148,16 +153,23 @@ public class BusinessSystem implements LeisureOffice, LookupService {
                     res.setCliente(cNuevo);
                 }
             }
+            // Reubicar contestaciones para no corromper el HashMap al cambiar el nick del cliente
+            Map<Review, Contestacion> contestacionesActualizadas = new HashMap<>();
             for (Review rev : reviews) {
                 if (rev.getCliente().equals(cViejo)) {
+                    Contestacion cont = contestaciones.remove(rev);
                     rev.setCliente(cNuevo);
+                    if (cont != null) {
+                        contestacionesActualizadas.put(rev, cont);
+                    }
                 }
             }
+            contestaciones.putAll(contestacionesActualizadas);
         } else if (u instanceof Dueño && nuevoU instanceof Dueño) {
             Dueño dViejo = (Dueño) u;
             Dueño dNuevo = (Dueño) nuevoU;
             for (Set<Dueño> dueños : propietariosDeLocal.values()) {
-                if (dueños.remove(dViejo)) {
+                if (dueños != null && dueños.remove(dViejo)) {
                     dueños.add(dNuevo);
                 }
             }
@@ -281,6 +293,9 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     @Override
     public boolean nuevaContestacion(Contestacion c, Review r) {
         if (c == null || r == null || !reviews.contains(r)) {
+            return false;
+        }
+        if (c.getReview() != null && !c.getReview().equals(r)) {
             return false;
         }
         if (tieneContestacion(r)) {
@@ -413,10 +428,10 @@ public class BusinessSystem implements LeisureOffice, LookupService {
      */
     @Override
     public boolean asociarLocal(Local l, Dueño d) {
-        if (!usuarios.contains(d) || !locales.contains(l)) {
+        if (l == null || d == null || !usuarios.contains(d) || !locales.contains(l)) {
             return false;
         }
-        if (!propietariosDeLocal.containsKey(l)) {
+        if (!propietariosDeLocal.containsKey(l) || propietariosDeLocal.get(l) == null) {
             Set<Dueño> dueños = new HashSet<>();
             dueños.add(d);
             propietariosDeLocal.put(l, dueños);
@@ -441,13 +456,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
      */
     @Override
     public boolean desasociarLocal(Local l, Dueño d) {
-        if (!usuarios.contains(d) || !locales.contains(l)) {
+        if (l == null || d == null || !usuarios.contains(d) || !locales.contains(l)) {
             return false;
         }
         if (propietariosDeLocal.containsKey(l)) {
-            if (propietariosDeLocal.get(l).contains(d)) {
-                propietariosDeLocal.get(l).remove(d);
-                return true;
+            Set<Dueño> set = propietariosDeLocal.get(l);
+            if (set != null && set.contains(d)) {
+                return set.remove(d);
             }
         }
         return false;
@@ -484,16 +499,28 @@ public class BusinessSystem implements LeisureOffice, LookupService {
             propietariosDeLocal.put(nuevoL, dueños);
         }
 
-        // Propagar la actualización a las reviews y reservas para mantener coherencia referencial
+        // Reubicar contestaciones para no corromper el HashMap al mutar la review
+        Map<Review, Contestacion> contestacionesActualizadas = new HashMap<>();
         for (Review rev : reviews) {
             if (rev.getLocal().equals(viejoL)) {
+                Contestacion c = contestaciones.remove(rev);
                 rev.setLocal(nuevoL);
+                if (c != null) {
+                    contestacionesActualizadas.put(rev, c);
+                }
             }
         }
-        for (Reserva res : reservas) {
-            if (res.getLocal().equals(viejoL) && nuevoL instanceof Reservable) {
-                res.setLocal((Reservable) nuevoL);
+        contestaciones.putAll(contestacionesActualizadas);
+
+        // Propagar a reservas; si el nuevo local no es reservable, eliminar reservas asociadas
+        if (nuevoL instanceof Reservable) {
+            for (Reserva res : reservas) {
+                if (res.getLocal().equals(viejoL)) {
+                    res.setLocal((Reservable) nuevoL);
+                }
             }
+        } else {
+            reservas.removeIf(res -> res.getLocal().equals(viejoL));
         }
 
         return true;
@@ -668,7 +695,7 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     public Bar[] listarBares(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
         if (localesEnZona == null) {
-            return new Bar[0];
+            return null;
         }
 
         List<Bar> baresFiltrados = new ArrayList<>();
@@ -684,13 +711,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
      * Lista los restaurantes situados en una ciudad y provincia concretas.
      * @param ciudad Ciudad de interés.
      * @param provincia Provincia de interés.
-     * @return Array con los restaurantes encontrados; array vacío de longitud 0 si no se encuentra ninguno o parámetros nulos.
+     * @return Array con los restaurantes encontrados; potencialmente de longitud 0, o null si algún parámetro es nulo.
      */
     @Override
     public Restaurante[] listarRestaurantes(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
         if (localesEnZona == null) {
-            return new Restaurante[0];
+            return null;
         }
 
         List<Restaurante> restauranteFiltrados = new ArrayList<>();
@@ -706,13 +733,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
      * Lista los pubs situados en una ciudad y provincia concretas.
      * @param ciudad Ciudad de interés.
      * @param provincia Provincia de interés.
-     * @return Array con los pubs encontrados; array vacío de longitud 0 si no se encuentra ninguno o parámetros nulos.
+     * @return Array con los pubs encontrados; potencialmente de longitud 0, o null si algún parámetro es nulo.
      */
     @Override
     public Pub[] listarPubs(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
         if (localesEnZona == null) {
-            return new Pub[0];
+            return null;
         }
 
         List<Pub> pubsFiltrados = new ArrayList<>();
@@ -999,6 +1026,19 @@ public class BusinessSystem implements LeisureOffice, LookupService {
 
                     if (this.nuevoLocal(bar)) {
                         numeroBares++;
+                        
+                        // Si la celda 4 contiene un dueño previamente registrado en el sistema, se asocia
+                        try {
+                            Object celdaDueno = tabla.getCellAt(4, fila).getValue();
+                            if (celdaDueno != null && !celdaDueno.toString().trim().isEmpty()) {
+                                Usuario u = this.obtenerUsuario(celdaDueno.toString().trim());
+                                if (u instanceof Dueño) {
+                                    this.asociarLocal(bar, (Dueño) u);
+                                }
+                            }
+                        } catch (Exception ignored) {
+                            // Ignorar si la celda no existe o no corresponde a un dueño registrado
+                        }
                     }
                 } catch (IllegalArgumentException e) {
                     // Fila con datos inválidos: se descarta y se continúa con la siguiente

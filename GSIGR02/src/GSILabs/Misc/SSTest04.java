@@ -20,9 +20,9 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * Genera un sistema de negocio con bares, restaurantes y pubs de ejemplo,
  * y exporta la información completa a un archivo ODS con tres hojas (Bar, Restaurante, Pub),
  * a razón de una fila por cada local, gestionando atributos escalares y de cardinalidad múltiple
- * (dueños, especialidades y capacidades).
+ * (dueños, especialidades y capacidades) alineado estrictamente con la estructura de la Figura 3.
  *
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest04 {
 
@@ -103,38 +103,32 @@ public class SSTest04 {
         sheetBar.setValueAt("DIRECCION",      1, rowBar);
         sheetBar.setValueAt("LOCALIDAD",      2, rowBar);
         sheetBar.setValueAt("PROVINCIA",      3, rowBar);
-        sheetBar.setValueAt("DESCRIPCION",    4, rowBar);
-        sheetBar.setValueAt("DUENO 1",        5, rowBar);
-        sheetBar.setValueAt("ESPECIALIDAD 1", 6, rowBar);
-        sheetBar.setValueAt("ESPECIALIDAD 2", 7, rowBar);
-        sheetBar.setValueAt("ESPECIALIDAD 3", 8, rowBar);
-        sheetBar.setValueAt("DUENO 2",        9, rowBar);
-        sheetBar.setValueAt("DUENO 3",        10, rowBar);
+        sheetBar.setValueAt("DUENO",          4, rowBar);
+        sheetBar.setValueAt("ESPECIALIDAD 1", 5, rowBar);
+        sheetBar.setValueAt("ESPECIALIDAD 2", 6, rowBar);
+        sheetBar.setValueAt("ESPECIALIDAD 3", 7, rowBar);
+        sheetBar.setValueAt("DESCRIPCION",    8, rowBar);
         rowBar++;    
         
         sheetRest.setValueAt("NOMBRE",           0, rowRest);
         sheetRest.setValueAt("DIRECCION",        1, rowRest);
         sheetRest.setValueAt("LOCALIDAD",        2, rowRest);
         sheetRest.setValueAt("PROVINCIA",        3, rowRest);
-        sheetRest.setValueAt("DESCRIPCION",      4, rowRest);
-        sheetRest.setValueAt("DUENO 1",          5, rowRest);
-        sheetRest.setValueAt("PRECIO ESTIMADO",  6, rowRest);
-        sheetRest.setValueAt("CAPACIDAD TOTAL",  7, rowRest);
-        sheetRest.setValueAt("CAPACIDAD MESA",   8, rowRest);
-        sheetRest.setValueAt("DUENO 2",          9, rowRest);
-        sheetRest.setValueAt("DUENO 3",          10, rowRest);
+        sheetRest.setValueAt("DUENO",            4, rowRest);
+        sheetRest.setValueAt("PRECIO ESTIMADO",  5, rowRest);
+        sheetRest.setValueAt("CAPACIDAD TOTAL",  6, rowRest);
+        sheetRest.setValueAt("CAPACIDAD MESA",   7, rowRest);
+        sheetRest.setValueAt("DESCRIPCION",      8, rowRest);
         rowRest++;
 
         sheetPub.setValueAt("NOMBRE",           0, rowPub);
         sheetPub.setValueAt("DIRECCION",        1, rowPub);
         sheetPub.setValueAt("LOCALIDAD",        2, rowPub);
         sheetPub.setValueAt("PROVINCIA",        3, rowPub);
-        sheetPub.setValueAt("DESCRIPCION",      4, rowPub);
-        sheetPub.setValueAt("DUENO 1",          5, rowPub);
-        sheetPub.setValueAt("HORA APERTURA",    6, rowPub);
-        sheetPub.setValueAt("HORA CLAUSURA",    7, rowPub);
-        sheetPub.setValueAt("DUENO 2",          8, rowPub);
-        sheetPub.setValueAt("DUENO 3",          9, rowPub);        
+        sheetPub.setValueAt("DUENO",            4, rowPub);
+        sheetPub.setValueAt("HORA APERTURA",    5, rowPub);
+        sheetPub.setValueAt("HORA CLAUSURA",    6, rowPub);
+        sheetPub.setValueAt("DESCRIPCION",      7, rowPub);
         rowPub++;
         
         // 8. Escribir una fila por cada local, repartiéndolos por tipo de hoja
@@ -147,30 +141,27 @@ public class SSTest04 {
             String descStr      = l.getDescripcion() != null ? l.getDescripcion() : "";
             
             Dueño[] duenos = bSystem.obtenerDueñosDeLocal(l);
-            String dueno1 = duenos.length > 0 ? duenos[0].getNick() : "N/A";
-            String dueno2 = duenos.length > 1 ? duenos[1].getNick() : "N/A";
-            String dueno3 = duenos.length > 2 ? duenos[2].getNick() : "N/A";
+            StringBuilder sbDuenos = new StringBuilder();
+            for (int dIdx = 0; dIdx < duenos.length; dIdx++) {
+                if (dIdx > 0) sbDuenos.append(", ");
+                sbDuenos.append(duenos[dIdx].getNick());
+            }
+            String duenosStr = sbDuenos.length() > 0 ? sbDuenos.toString() : "N/A";
 
             if (l instanceof Bar) {
                 Bar b = (Bar) l;
                 List<String> especialidades = b.getEspecialidades();
                 
-                String e1 = especialidades.size() > 0 ? especialidades.get(0) : "N/A";
-                String e2 = especialidades.size() > 1 ? especialidades.get(1) : "N/A";
-                String e3 = especialidades.size() > 2 ? especialidades.get(2) : "N/A";
-                
                 sheetBar.ensureRowCount(rowBar + 1);
-                sheetBar.setValueAt(nombre,      0, rowBar);
-                sheetBar.setValueAt(direccionStr,1, rowBar);
-                sheetBar.setValueAt(localidadStr,2, rowBar);
-                sheetBar.setValueAt(provinciaStr,3, rowBar);
-                sheetBar.setValueAt(descStr,     4, rowBar);
-                sheetBar.setValueAt(dueno1,      5, rowBar);
-                sheetBar.setValueAt(e1,          6, rowBar);
-                sheetBar.setValueAt(e2,          7, rowBar);
-                sheetBar.setValueAt(e3,          8, rowBar);
-                sheetBar.setValueAt(dueno2,      9, rowBar);
-                sheetBar.setValueAt(dueno3,      10, rowBar);
+                sheetBar.setValueAt(nombre,       0, rowBar);
+                sheetBar.setValueAt(direccionStr, 1, rowBar);
+                sheetBar.setValueAt(localidadStr, 2, rowBar);
+                sheetBar.setValueAt(provinciaStr, 3, rowBar);
+                sheetBar.setValueAt(duenosStr,    4, rowBar);
+                for (int col = 0; col < especialidades.size(); col++) {
+                    sheetBar.setValueAt(especialidades.get(col), 5 + col, rowBar);
+                }
+                sheetBar.setValueAt(descStr, 5 + Math.max(3, especialidades.size()), rowBar);
                 rowBar++;
             
             } else if (l instanceof Restaurante) {
@@ -180,13 +171,11 @@ public class SSTest04 {
                 sheetRest.setValueAt(direccionStr,                1, rowRest);
                 sheetRest.setValueAt(localidadStr,                2, rowRest);
                 sheetRest.setValueAt(provinciaStr,                3, rowRest);
-                sheetRest.setValueAt(descStr,                     4, rowRest);
-                sheetRest.setValueAt(dueno1,                      5, rowRest);
-                sheetRest.setValueAt(r.getPrecioEstimado(),       6, rowRest);
-                sheetRest.setValueAt(r.getCapacidadMaximaTotal(), 7, rowRest);
-                sheetRest.setValueAt(r.getCapacidadMaximaMesa(),  8, rowRest);
-                sheetRest.setValueAt(dueno2,                      9, rowRest);
-                sheetRest.setValueAt(dueno3,                      10, rowRest);
+                sheetRest.setValueAt(duenosStr,                   4, rowRest);
+                sheetRest.setValueAt(r.getPrecioEstimado(),       5, rowRest);
+                sheetRest.setValueAt(r.getCapacidadMaximaTotal(), 6, rowRest);
+                sheetRest.setValueAt(r.getCapacidadMaximaMesa(),  7, rowRest);
+                sheetRest.setValueAt(descStr,                     8, rowRest);
                 rowRest++;
             
             } else if (l instanceof Pub) {
@@ -196,12 +185,10 @@ public class SSTest04 {
                 sheetPub.setValueAt(direccionStr,                  1, rowPub);
                 sheetPub.setValueAt(localidadStr,                  2, rowPub);
                 sheetPub.setValueAt(provinciaStr,                  3, rowPub);
-                sheetPub.setValueAt(descStr,                       4, rowPub);
-                sheetPub.setValueAt(dueno1,                        5, rowPub);
-                sheetPub.setValueAt(p.getHoraApertura().toString(),6, rowPub);
-                sheetPub.setValueAt(p.getHoraClausura().toString(),7, rowPub);
-                sheetPub.setValueAt(dueno2,                        8, rowPub);
-                sheetPub.setValueAt(dueno3,                        9, rowPub);                
+                sheetPub.setValueAt(duenosStr,                     4, rowPub);
+                sheetPub.setValueAt(p.getHoraApertura().toString(),5, rowPub);
+                sheetPub.setValueAt(p.getHoraClausura().toString(),6, rowPub);
+                sheetPub.setValueAt(descStr,                       7, rowPub);
                 rowPub++;
             }
         }

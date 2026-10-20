@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Representa una opinión (Review) dejada en el sistema por un Cliente acerca de
  * un Local.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Review {
 
@@ -176,17 +176,19 @@ public class Review {
             return false;
         }
         Review review = (Review) o;
+        if (this.cliente == null || review.cliente == null) {
+            return false;
+        }
 
-        // Comparamos directamente el NICK del cliente en lugar del objeto completo
-        return this.cliente.getNick().equals(review.getCliente().getNick())
+        // Comparamos el NICK del cliente, local y fecha de visita
+        return Objects.equals(this.cliente.getNick(), review.cliente.getNick())
                 && Objects.equals(this.local, review.local)
                 && Objects.equals(this.fechaVisita, review.fechaVisita);
     }
 
     @Override
     public int hashCode() {
-        // Usamos el nick para generar el hash
-        return Objects.hash(cliente.getNick(), local, fechaVisita);
+        return Objects.hash(cliente != null ? cliente.getNick() : null, local, fechaVisita);
     }
 
     @Override

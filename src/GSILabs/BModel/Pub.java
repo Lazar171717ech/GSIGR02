@@ -4,7 +4,7 @@ import java.time.LocalTime;
 
 /**
  * Representa un Pub que hereda de Local.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Pub extends Local {
     
@@ -18,7 +18,9 @@ public class Pub extends Local {
      * @param descripcion la descripción del local
      * @param horaApertura la hora de apertura del pub
      * @param horaClausura la hora de clausura del pub
-     * @throws IllegalArgumentException si la hora de apertura o la hora de clausura son nulas.
+     * @throws IllegalArgumentException si la hora de apertura o la hora de clausura son nulas,
+     *                                  o si el nombre es nulo o vacío, la dirección es nula,
+     *                                  o la descripción supera los 300 caracteres.
      */
     public Pub(String nombre, Direccion direccion, String descripcion, 
             LocalTime horaApertura, LocalTime horaClausura) {

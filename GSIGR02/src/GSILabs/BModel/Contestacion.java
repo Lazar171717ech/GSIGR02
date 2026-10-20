@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * Representa una Contestación realizada por un Dueño a una Review existente.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Contestacion {
 
@@ -126,16 +126,19 @@ public class Contestacion {
             return false;
         }
         Contestacion that = (Contestacion) o;
+        if (this.dueño == null || that.dueño == null) {
+            return false;
+        }
 
         // Comparamos el NICK del dueño y la review a la que hace referencia
-        return this.dueño.getNick().equals(that.getDueño().getNick())
+        return Objects.equals(this.dueño.getNick(), that.getDueño().getNick())
                 && Objects.equals(this.review, that.review);
     }
 
     @Override
     public int hashCode() {
         // Usamos el nick del dueño y la review para el hash
-        return Objects.hash(dueño.getNick(), review);
+        return Objects.hash(dueño != null ? dueño.getNick() : null, review);
     }
 
     @Override

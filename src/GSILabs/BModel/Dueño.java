@@ -5,7 +5,7 @@ import java.time.LocalDate;
 
 /**
  * Clase que representa a un Dueño (tipo de Usuario).
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Dueño extends Usuario {
 

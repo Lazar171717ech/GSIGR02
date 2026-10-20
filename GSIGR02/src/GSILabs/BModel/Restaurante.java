@@ -2,7 +2,7 @@ package GSILabs.BModel;
 
 /**
  * Representa un Restaurante que hereda de Local y es Reservable.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Restaurante extends Local implements Reservable{
     
@@ -19,7 +19,8 @@ public class Restaurante extends Local implements Reservable{
      * @param capacidadMaximaTotal la capacidad máxima total de personas
      * @param capacidadMaximaMesa la capacidad máxima por mesa
      * @throws IllegalArgumentException si el precio estimado es negativo, si las capacidades son menores o iguales a 0, 
-     *                                  o si la capacidad por mesa supera a la total.
+     *                                  si la capacidad por mesa supera a la total, o si el nombre es nulo o vacío, 
+     *                                  la dirección es nula, o la descripción supera los 300 caracteres.
      */
     public Restaurante(String nombre, Direccion direccion, String descripcion, 
             float precioEstimado, int capacidadMaximaTotal, int capacidadMaximaMesa) {

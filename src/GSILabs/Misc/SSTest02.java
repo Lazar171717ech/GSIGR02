@@ -17,7 +17,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * El fondo de cada celda es azul si el valor es mayor o igual a 10, y rojo
  * en caso contrario.
  *
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest02 {
 

@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * Representación de la clase dirección.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Direccion {
     

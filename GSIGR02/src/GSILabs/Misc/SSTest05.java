@@ -10,7 +10,7 @@ import java.io.File;
  * El archivo de entrada esperado es P02Ej05.ods, ubicado en el directorio
  * raíz del proyecto.
  *
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest05 {
     
@@ -31,6 +31,9 @@ public class SSTest05 {
         BusinessSystem sistema = new BusinessSystem();
 
         File f = new File("P02Ej05.ods");
+        if (!f.exists()) {
+            f = new File("GSIGR02/P02Ej05.ods");
+        }
 
         int numeroBares = sistema.importaBares(f);
 

@@ -10,7 +10,7 @@ import java.time.LocalTime;
  * Valida la lógica de negocio del sistema, incluyendo altas, bajas, límites de propietarios,
  * integridad referencial, reservas, reviews y contestaciones sobre bares, restaurantes y pubs.
  * 
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Tester {
 

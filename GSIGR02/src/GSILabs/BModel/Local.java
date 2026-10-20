@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * Implementación de la clase Local.
- * @author Equipo2
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Local {
     
