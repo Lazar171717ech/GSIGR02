@@ -1,6 +1,5 @@
 package GSILabs.BModel;
 
-import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -37,9 +36,9 @@ public class Direccion {
             throw new IllegalArgumentException("El número debe ser mayor que cero.");
         }
         
-        this.localidad = localidad;
-        this.provincia = provincia;
-        this.calle = calle;
+        this.localidad = localidad.trim();
+        this.provincia = provincia.trim();
+        this.calle = calle.trim();
         this.numero = numero;
     }
 
@@ -60,7 +59,7 @@ public class Direccion {
         if(localidad == null || localidad.trim().isEmpty()){
             throw new IllegalArgumentException("La localidad no puede ser nula ni vacía.");
         }
-        this.localidad = localidad;
+        this.localidad = localidad.trim();
     }
 
     /**
@@ -80,7 +79,7 @@ public class Direccion {
         if(provincia == null || provincia.trim().isEmpty()){
             throw new IllegalArgumentException("La provincia no puede ser nula ni vacía.");
         }
-        this.provincia = provincia;
+        this.provincia = provincia.trim();
     }
 
     /**
@@ -100,7 +99,7 @@ public class Direccion {
         if(calle == null || calle.trim().isEmpty()){
             throw new IllegalArgumentException("La calle no puede ser nula ni vacía.");
         }
-        this.calle = calle;
+        this.calle = calle.trim();
     }
 
     /**

@@ -1,4 +1,3 @@
-
 package GSILabs.Misc;
 
 import java.io.File;
@@ -7,10 +6,11 @@ import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
- * Implementación del test 3 para hojas de cálculo.
+ * Implementación del test 3 para hojas de cálculo (Práctica 02).
  * Lee el archivo test02.ods generado por SSTest02, extrae la matriz de 4x6
- * números a partir de la cuarta fila y sexta columna (desplazamientos hard-coded),
- * y muestra los valores recuperados por consola.
+ * números a partir de la fila 6 (índice 5) y columna D (índice 3), coincidiendo
+ * con las 5 filas y 3 columnas vacías especificadas en SSTest02 y la Figura 2.
+ * Muestra los valores numéricos recuperados por consola.
  *
  * @author Equipo2
  */
@@ -25,7 +25,7 @@ public class SSTest03 {
     /**
      * Método principal que ejecuta la prueba de lectura y volcado de datos desde el archivo ODS.
      * Los desplazamientos están codificados de forma explícita para coincidir con los
-     * usados en SSTest02 (fila=3, columna=5).
+     * usados en SSTest02 (desplazamientoFila = 5, desplazamientoColumna = 3).
      * @param args los argumentos de la línea de comandos
      */
     public static void main(String[] args) {
@@ -40,9 +40,9 @@ public class SSTest03 {
                 return;
             }
             
-            // Desplazamientos idénticos a los de SSTest02
-            int desplazamientoFila    = 3;
-            int desplazamientoColumna = 5;
+            // Desplazamientos idénticos a los de SSTest02 (5 filas y 3 columnas vacías)
+            int desplazamientoFila    = 5;
+            int desplazamientoColumna = 3;
 
             SpreadSheet spreadSheet = SpreadSheet.createFromFile(archivo);
             Sheet hoja = spreadSheet.getSheet(0);

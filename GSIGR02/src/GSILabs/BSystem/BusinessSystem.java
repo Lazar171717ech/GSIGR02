@@ -1,4 +1,3 @@
-
 package GSILabs.BSystem;
 
 import GSILabs.BModel.Bar;
@@ -29,25 +28,36 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
  * Clase principal que implementa la lógica de negocio del sistema LeisureOffice
- * y los servicios de consulta (LookupService).
+ * y los servicios de consulta avanzada (LookupService).
+ * 
+ * Gestiona el almacenamiento de usuarios, locales, reservas, reviews y contestaciones,
+ * garantizando la coherencia de los datos mediante políticas de validación y borrado en cascada.
  * 
  * @author Equipo2
  */
 public class BusinessSystem implements LeisureOffice, LookupService {
 
-    private List<Usuario> usuarios = new ArrayList<>();
-    private List<Local> locales = new ArrayList<>();
-    private List<Review> reviews = new ArrayList<>();
-    private Map<Review, Contestacion> contestaciones = new HashMap<>();
-    private Map<Local, Set<Dueño>> propietariosDeLocal = new HashMap<>();
-    private List<Reserva> reservas = new ArrayList<>();
+    private final List<Usuario> usuarios = new ArrayList<>();
+    private final List<Local> locales = new ArrayList<>();
+    private final List<Review> reviews = new ArrayList<>();
+    private final Map<Review, Contestacion> contestaciones = new HashMap<>();
+    private final Map<Local, Set<Dueño>> propietariosDeLocal = new HashMap<>();
+    private final List<Reserva> reservas = new ArrayList<>();
 
     /**
      * Constructor por defecto de BusinessSystem.
+     * Inicializa las colecciones en memoria del sistema de información.
      */
     public BusinessSystem() {
     }
 
+    /**
+     * Da de alta un nuevo usuario (Cliente o Dueño) en el sistema.
+     * Comprueba que el usuario no sea nulo, que tenga al menos 14 años de edad
+     * y que su nick no esté registrado previamente.
+     * @param u El nuevo usuario a registrar.
+     * @return true si el usuario se registró con éxito; false en caso contrario.
+     */
     @Override
     public boolean nuevoUsuario(Usuario u) {
         if (u == null) return false;
@@ -60,6 +70,14 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return true;
     }
 
+    /**
+     * Elimina a un usuario del sistema aplicando una política de borrado en cascada
+     * para asegurar la integridad referencial y no dejar datos huérfanos:
+     * Si es un Cliente, se eliminan sus reservas y sus reviews (junto con las contestaciones asociadas).
+     * Si es un Dueño, se eliminan sus contestaciones y se le desasocia de todos sus locales.
+     * @param u El usuario a eliminar.
+     * @return true si el usuario existía y fue eliminado; false en caso contrario.
+     */
     @Override
     public boolean eliminaUsuario(Usuario u) {
         if (u == null || !usuarios.contains(u)) {
@@ -95,6 +113,15 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return usuarios.remove(u);
     }
 
+    /**
+     * Reemplaza en el sistema al usuario viejo por el nuevo.
+     * Comprueba que el usuario original exista, que el nuevo cumpla con la edad mínima (>=14)
+     * y que el nuevo nick no pertenezca a otro usuario registrado.
+     * Propaga la actualización a las reservas, reviews, titularidad de locales y contestaciones.
+     * @param u El usuario existente a modificar.
+     * @param nuevoU El nuevo usuario con la información actualizada.
+     * @return true si el usuario pudo ser modificado; false en caso contrario.
+     */
     @Override
     public boolean modificaUsuario(Usuario u, Usuario nuevoU) {
         if (u == null || nuevoU == null) {
@@ -104,7 +131,7 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         int index = usuarios.indexOf(u);
         if (index == -1) return false;
         
-        // Punto 6: Comprobar que el nuevo nick no pertenezca ya a otro usuario
+        // Comprobar que el nuevo nick no pertenezca ya a otro usuario diferente
         if (!u.getNick().equals(nuevoU.getNick()) && existeNick(nuevoU.getNick())) {
             return false;
         }
@@ -112,10 +139,44 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         int edad = Period.between(nuevoU.getFechaNacimiento(), LocalDate.now()).getYears();
         if (edad < 14) return false;
         
+        // Mantener coherencia en las relaciones existentes
+        if (u instanceof Cliente && nuevoU instanceof Cliente) {
+            Cliente cViejo = (Cliente) u;
+            Cliente cNuevo = (Cliente) nuevoU;
+            for (Reserva res : reservas) {
+                if (res.getCliente().equals(cViejo)) {
+                    res.setCliente(cNuevo);
+                }
+            }
+            for (Review rev : reviews) {
+                if (rev.getCliente().equals(cViejo)) {
+                    rev.setCliente(cNuevo);
+                }
+            }
+        } else if (u instanceof Dueño && nuevoU instanceof Dueño) {
+            Dueño dViejo = (Dueño) u;
+            Dueño dNuevo = (Dueño) nuevoU;
+            for (Set<Dueño> dueños : propietariosDeLocal.values()) {
+                if (dueños.remove(dViejo)) {
+                    dueños.add(dNuevo);
+                }
+            }
+            for (Contestacion c : contestaciones.values()) {
+                if (c.getDueño().equals(dViejo)) {
+                    c.setDueño(dNuevo);
+                }
+            }
+        }
+        
         usuarios.set(index, nuevoU);
         return true;
     }
 
+    /**
+     * Comprueba si existe algún usuario registrado con el nick especificado.
+     * @param nick Nick del usuario a comprobar.
+     * @return true si existe un usuario con ese nick; false en caso contrario o si nick es null.
+     */
     @Override
     public boolean existeNick(String nick) {
         if (nick == null) {
@@ -129,6 +190,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return false;
     }
 
+    /**
+     * Recupera el usuario registrado con un determinado nick.
+     * @param nick Nick del usuario a recuperar.
+     * @return El usuario correspondiente, o null si no existe ningún usuario con dicho nick.
+     */
     @Override
     public Usuario obtenerUsuario(String nick) {
         if (nick == null) {
@@ -142,12 +208,19 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return null;
     }
 
+    /**
+     * Incorpora una nueva review al sistema.
+     * Valida que la review no sea nula, que el cliente y el local estén registrados en el sistema
+     * y que el cliente no haya valorado previamente la misma visita (mismo local y misma fecha de visita).
+     * @param r La review a incorporar.
+     * @return true si la review fue incorporada con éxito; false si los datos son inválidos o duplicados.
+     */
     @Override
     public boolean nuevaReview(Review r) {
         if (r == null || r.getCliente() == null || r.getLocal() == null) {
             return false;
         }
-        // Punto 4: Comprobar que el cliente y el local estén dados de alta
+        // Comprobar que el cliente y el local estén dados de alta
         if (!usuarios.contains(r.getCliente()) || !locales.contains(r.getLocal())) {
             return false;
         }
@@ -158,6 +231,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return true;
     }
 
+    /**
+     * Elimina una review del sistema, siempre y cuando exista y no posea una contestación asociada.
+     * @param r La review a eliminar.
+     * @return true si la review existía y pudo ser eliminada; false en caso contrario.
+     */
     @Override
     public boolean eliminaReview(Review r) {
         if (r == null || !reviews.contains(r)) {
@@ -170,6 +248,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return true;
     }
 
+    /**
+     * Comprueba si la visita de un usuario a un local en una fecha dada ha sido comentada en el sistema.
+     * @param u El usuario cliente.
+     * @param l El local visitado.
+     * @param ld La fecha de visita.
+     * @return true si existe una review registrada para esa combinación; false en caso contrario.
+     */
     @Override
     public boolean existeRewiew(Usuario u, Local l, LocalDate ld) {
         if (u == null || l == null || ld == null) {
@@ -185,6 +270,14 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return false;
     }
 
+    /**
+     * Añade una contestación a una review existente.
+     * Valida que la review exista, que no tenga ya otra contestación y que el dueño
+     * que contesta sea uno de los propietarios legítimos del local valorado.
+     * @param c La contestación a añadir.
+     * @param r La review a la que se responde.
+     * @return true si la contestación fue aceptada; false en caso contrario.
+     */
     @Override
     public boolean nuevaContestacion(Contestacion c, Review r) {
         if (c == null || r == null || !reviews.contains(r)) {
@@ -205,21 +298,41 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return true;
     }
 
+    /**
+     * Consulta si una review tiene una contestación asociada.
+     * @param r La review a consultar.
+     * @return true si la review está registrada y tiene contestación; false en caso contrario.
+     */
     @Override
     public boolean tieneContestacion(Review r) {
-        return contestaciones.containsKey(r);
+        return r != null && contestaciones.containsKey(r);
     }
 
+    /**
+     * Recupera la contestación asociada a una review dada.
+     * @param r La review a consultar.
+     * @return La contestación asociada, o null si no existe o la review no está registrada.
+     */
     @Override
     public Contestacion obtenerContestacion(Review r) {
-        return contestaciones.get(r);
+        return r != null ? contestaciones.get(r) : null;
     }
 
+    /**
+     * Elimina la contestación pasada como argumento.
+     * @param c La contestación a eliminar.
+     * @return true si la contestación fue eliminada; false en caso contrario.
+     */
     @Override
     public boolean eliminaContestacion(Contestacion c) {
         return contestaciones.values().remove(c);
     }
 
+    /**
+     * Elimina la contestación asociada a una review dada.
+     * @param r La review cuya contestación se desea eliminar.
+     * @return true si existía contestación y fue eliminada; false en caso contrario.
+     */
     @Override
     public boolean eliminaContestacion(Review r) {
         if (r != null && contestaciones.containsKey(r)) {
@@ -229,6 +342,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return false;
     }
 
+    /**
+     * Añade un nuevo local al sistema, garantizando que no exista otro local en la misma dirección física.
+     * @param l El local a añadir.
+     * @return true si el local se añadió correctamente; false si es nulo o su dirección ya está ocupada.
+     */
     @Override
     public boolean nuevoLocal(Local l) {
         if (l == null) {
@@ -240,13 +358,19 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return locales.add(l);
     }
 
+    /**
+     * Elimina un local del sistema aplicando una política de borrado en cascada para evitar datos huérfanos:
+     * elimina todas sus reservas, todas sus reviews (y las contestaciones asociadas) y su registro de propietarios.
+     * @param local El local a eliminar.
+     * @return true si el local existía y fue eliminado; false en caso contrario.
+     */
     @Override
     public boolean eliminarLocal(Local local) {
         if (local == null || !locales.contains(local)) {
             return false;
         }
         
-        // Punto 9: Borrado en cascada para mantener la coherencia de datos
+        // Borrado en cascada para mantener la coherencia de datos
         reservas.removeIf(reserva -> reserva.getLocal().equals(local));
 
         reviews.removeIf(review -> {
@@ -262,6 +386,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return locales.remove(local);
     }
 
+    /**
+     * Obtiene el local instalado en una determinada dirección física.
+     * @param d La dirección del local a buscar.
+     * @return El local correspondiente, o null si no existe ningún local en dicha dirección.
+     */
     @Override
     public Local obtenerLocal(Direccion d) {
         if (d == null) {
@@ -275,6 +404,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return null;
     }
 
+    /**
+     * Asocia un local a un dueño, siempre que ambos existan y no se supere el límite de 3 dueños por local.
+     * La asociación es idempotente si el dueño ya estaba vinculado.
+     * @param l Local existente en el sistema.
+     * @param d Dueño existente en el sistema.
+     * @return true si el dueño quedó asociado con éxito; false si alguno no existe o se supera el límite de 3.
+     */
     @Override
     public boolean asociarLocal(Local l, Dueño d) {
         if (!usuarios.contains(d) || !locales.contains(l)) {
@@ -297,6 +433,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return false;
     }
 
+    /**
+     * Desliga un local de un propietario, siempre que ambos existan y estén previamente relacionados.
+     * @param l Local existente en el sistema.
+     * @param d Dueño existente en el sistema.
+     * @return true si la desasociación se completó con éxito; false en caso contrario.
+     */
     @Override
     public boolean desasociarLocal(Local l, Dueño d) {
         if (!usuarios.contains(d) || !locales.contains(l)) {
@@ -311,6 +453,14 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return false;
     }
 
+    /**
+     * Reemplaza en el sistema un local viejo por uno nuevo con datos actualizados.
+     * Comprueba que el local original exista y que la nueva dirección no esté ocupada por otro local.
+     * Mantiene la asociación de propietarios, reviews y reservas asociadas para evitar inconsistencias.
+     * @param viejoL Local existente que se desea actualizar.
+     * @param nuevoL Nuevo local con los datos actualizados.
+     * @return true si el local se actualizó correctamente; false en caso contrario.
+     */
     @Override
     public boolean actualizarLocal(Local viejoL, Local nuevoL) {
         if (viejoL == null || nuevoL == null) {
@@ -328,17 +478,34 @@ public class BusinessSystem implements LeisureOffice, LookupService {
 
         locales.set(index, nuevoL);
 
-        // Punto 8: Evitar guardar un valor null en el mapa si el local no tenía dueños
+        // Actualizar titularidad en el mapa de propietarios
         Set<Dueño> dueños = propietariosDeLocal.remove(viejoL);
         if (dueños != null) {
             propietariosDeLocal.put(nuevoL, dueños);
         }
+
+        // Propagar la actualización a las reviews y reservas para mantener coherencia referencial
+        for (Review rev : reviews) {
+            if (rev.getLocal().equals(viejoL)) {
+                rev.setLocal(nuevoL);
+            }
+        }
+        for (Reserva res : reservas) {
+            if (res.getLocal().equals(viejoL) && nuevoL instanceof Reservable) {
+                res.setLocal((Reservable) nuevoL);
+            }
+        }
+
         return true;
     }
 
+    /**
+     * Devuelve las reviews asociadas a un local determinado.
+     * @param l Local existente en el sistema.
+     * @return Array de reviews del local; array vacío de longitud 0 si no tiene ninguna; o null si el local no existe.
+     */
     @Override
     public Review[] verReviews(Local l) {
-        // Puntos 1 y 2: Solucionar el NullPointerException y devolver array vacío si no hay reviews
         if (l == null || !locales.contains(l)) {
             return null;
         }
@@ -351,6 +518,16 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return revsList.toArray(new Review[revsList.size()]);
     }
 
+    /**
+     * Registra una nueva reserva para un cliente en un local reservable para una fecha y hora futura.
+     * Comprueba que cliente y local existan, que la fecha y hora sean futuras y que no exista
+     * una reserva duplicada para el mismo cliente, local y fecha.
+     * @param c Cliente que realiza la reserva.
+     * @param r Local reservable (Bar o Restaurante).
+     * @param ld Fecha de la reserva (debe ser futura o de hoy con hora posterior a la actual).
+     * @param lt Hora de la reserva.
+     * @return true si la reserva fue completada; false en caso contrario.
+     */
     @Override
     public boolean nuevaReserva(Cliente c, Reservable r, LocalDate ld, LocalTime lt) {
         if (c == null || r == null || ld == null || lt == null) {
@@ -383,6 +560,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return reservas.add(new Reserva(ld, lt, 0, c, r));
     }
 
+    /**
+     * Obtiene todas las reservas asociadas a un cliente específico.
+     * @param c El cliente a consultar.
+     * @return Array con las reservas del cliente, o null si el cliente no está registrado.
+     */
     @Override
     public Reserva[] obtenerReservas(Cliente c) {
         if (c == null || !usuarios.contains(c)) {
@@ -399,6 +581,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return reservasDelCliente.toArray(new Reserva[reservasDelCliente.size()]);
     }
 
+    /**
+     * Obtiene todas las reservas asociadas a un local reservable.
+     * @param r El local reservable a consultar.
+     * @return Array con las reservas del local, o null si el local no está registrado.
+     */
     @Override
     public Reserva[] obtenerReservas(Reservable r) {
         if (r == null || !locales.contains(r)) {
@@ -415,6 +602,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return reservasDelLocal.toArray(new Reserva[reservasDelLocal.size()]);
     }
 
+    /**
+     * Obtiene todas las reservas del sistema programadas para una fecha dada.
+     * @param ld La fecha a consultar.
+     * @return Array con las reservas correspondientes a ese día, o null si ld es nulo.
+     */
     @Override
     public Reserva[] obtenerReservas(LocalDate ld) {
         if (ld == null) {
@@ -431,11 +623,22 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return reservasDelDia.toArray(new Reserva[reservasDelDia.size()]);
     }
 
+    /**
+     * Elimina una reserva del sistema si ésta existe.
+     * @param r La reserva a eliminar.
+     * @return true si la reserva existía y fue eliminada; false en caso contrario.
+     */
     @Override
     public boolean eliminarReserva(Reserva r) {
-        return reservas.remove(r);
+        return r != null && reservas.remove(r);
     }
 
+    /**
+     * Lista todos los locales situados en una ciudad y provincia concretas.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array con los locales encontrados; potencialmente de longitud 0, o null si algún parámetro es nulo.
+     */
     @Override
     public Local[] listarLocales(String ciudad, String provincia) {
         if (ciudad == null || provincia == null) {
@@ -455,6 +658,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return localesFiltrados.toArray(new Local[localesFiltrados.size()]);
     }
 
+    /**
+     * Lista los bares situados en una ciudad y provincia concretas.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array con los bares encontrados; array vacío de longitud 0 si no se encuentra ninguno o parámetros nulos.
+     */
     @Override
     public Bar[] listarBares(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
@@ -471,6 +680,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return baresFiltrados.toArray(new Bar[baresFiltrados.size()]);
     }
 
+    /**
+     * Lista los restaurantes situados en una ciudad y provincia concretas.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array con los restaurantes encontrados; array vacío de longitud 0 si no se encuentra ninguno o parámetros nulos.
+     */
     @Override
     public Restaurante[] listarRestaurantes(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
@@ -487,6 +702,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return restauranteFiltrados.toArray(new Restaurante[restauranteFiltrados.size()]);
     }
 
+    /**
+     * Lista los pubs situados en una ciudad y provincia concretas.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array con los pubs encontrados; array vacío de longitud 0 si no se encuentra ninguno o parámetros nulos.
+     */
     @Override
     public Pub[] listarPubs(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
@@ -503,6 +724,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return pubsFiltrados.toArray(new Pub[pubsFiltrados.size()]);
     }
 
+    /**
+     * Obtiene la valoración media de las reviews asociadas a un local.
+     * @param l Local de interés.
+     * @return La valoración media calculada; 0f si no tiene reviews; -1f si el local no existe o es nulo.
+     */
     @Override
     public float obtenerValoracionMedia(Local l) {
         Review[] reviewsDelLocal = verReviews(l);
@@ -521,6 +747,11 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return suma / reviewsDelLocal.length;
     }
 
+    /**
+     * Obtiene la valoración media de todas las reviews asociadas a los locales pertenecientes a un dueño.
+     * @param d El dueño a investigar.
+     * @return La valoración media global; 0f si sus locales no tienen reviews; -1f si el dueño no existe o es nulo.
+     */
     @Override
     public float obtenerValoracionMedia(Dueño d) {
         if (d == null || !usuarios.contains(d)) {
@@ -544,6 +775,14 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return sumaValoraciones / contadorReviews;
     }
 
+    /**
+     * Obtiene la valoración media de un local realizada por usuarios que, en el momento de la valoración,
+     * se encontraban dentro de un rango de edad determinado (ambos extremos incluidos).
+     * @param l Local de interés.
+     * @param edadEntre Edad mínima del rango (incluida).
+     * @param edadHasta Edad máxima del rango (incluida).
+     * @return La valoración media en ese rango de edad; 0f si no hay reviews en ese rango; -1f si el local no existe.
+     */
     @Override
     public float obtenerValoracionMedia(Local l, int edadEntre, int edadHasta) {
         Review[] reviewsDelLocal = verReviews(l);
@@ -556,10 +795,10 @@ public class BusinessSystem implements LeisureOffice, LookupService {
 
         for (Review r : reviewsDelLocal) {
             Usuario cliente = r.getCliente();
-            LocalDate fechaDeLaReview = r.getFechaVisita();
-            LocalDate fechaNacimiento = cliente.getFechaNacimiento();
+            LocalDate fechaDeLaReview = r.getFechaGeneracion() != null ? r.getFechaGeneracion() : r.getFechaVisita();
+            LocalDate fechaNacimiento = cliente != null ? cliente.getFechaNacimiento() : null;
             if (fechaDeLaReview != null && fechaNacimiento != null) {
-                int edadEnEseMomento = java.time.Period.between(fechaNacimiento, fechaDeLaReview).getYears();
+                int edadEnEseMomento = Period.between(fechaNacimiento, fechaDeLaReview).getYears();
                 if (edadEnEseMomento >= edadEntre && edadEnEseMomento <= edadHasta) {
                     sumaValoraciones += r.getValoracion();
                     contador++;
@@ -574,6 +813,13 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return sumaValoraciones / contador;
     }
 
+    /**
+     * Obtiene los locales de una ciudad y provincia ordenados por su valoración media en orden descendente.
+     * Los locales sin reviews son ponderados con 0.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array de locales ordenados por nota media descendente, o null si algún parámetro es nulo.
+     */
     @Override
     public Local[] obtenerLocalesOrdenados(String ciudad, String provincia) {
         Local[] localesEnZona = listarLocales(ciudad, provincia);
@@ -590,6 +836,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return localesEnZona;
     }
 
+    /**
+     * Obtiene todos los locales de una provincia ordenados por su valoración media en orden descendente.
+     * Los locales sin reviews son ponderados con 0.
+     * @param provincia Provincia de interés.
+     * @return Array de locales ordenados por nota media descendente, o null si provincia es nula.
+     */
     @Override
     public Local[] obtenerLocalesOrdenados(String provincia) {
         if (provincia == null) {
@@ -614,6 +866,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return arrayLocales;
     }
 
+    /**
+     * Obtiene los bares de una ciudad y provincia ordenados por su valoración media en orden descendente.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array de bares ordenados por nota media descendente.
+     */
     @Override
     public Bar[] obtenerBaresOrdenados(String ciudad, String provincia) {
         Bar[] baresEnZona = listarBares(ciudad, provincia);
@@ -629,6 +887,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return baresEnZona;
     }
 
+    /**
+     * Obtiene los restaurantes de una ciudad y provincia ordenados por su valoración media en orden descendente.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array de restaurantes ordenados por nota media descendente.
+     */
     @Override
     public Restaurante[] obtenerRestaurantesOrdenados(String ciudad, String provincia) {
         Restaurante[] restauranteEnZona = listarRestaurantes(ciudad, provincia);
@@ -636,14 +900,20 @@ public class BusinessSystem implements LeisureOffice, LookupService {
             return restauranteEnZona;
         }
 
-        java.util.Arrays.sort(restauranteEnZona, (bar1, bar2) -> {
-            float nota1 = obtenerValoracionMedia(bar1);
-            float nota2 = obtenerValoracionMedia(bar2);
+        java.util.Arrays.sort(restauranteEnZona, (r1, r2) -> {
+            float nota1 = obtenerValoracionMedia(r1);
+            float nota2 = obtenerValoracionMedia(r2);
             return Float.compare(nota2, nota1);
         });
         return restauranteEnZona;
     }
 
+    /**
+     * Obtiene los pubs de una ciudad y provincia ordenados por su valoración media en orden descendente.
+     * @param ciudad Ciudad de interés.
+     * @param provincia Provincia de interés.
+     * @return Array de pubs ordenados por nota media descendente.
+     */
     @Override
     public Pub[] obtenerPubOrdenados(String ciudad, String provincia) {
         Pub[] pubsEnZona = listarPubs(ciudad, provincia);
@@ -663,9 +933,10 @@ public class BusinessSystem implements LeisureOffice, LookupService {
      * Carga un listado de bares desde un fichero ODS y los incorpora al sistema de negocio.
      * El fichero debe tener una única hoja con el nombre del bar en la primera columna;
      * la lectura se detiene en la primera fila cuya primera columna esté vacía.
-     * Las filas con datos inválidos o incompletos se descartan sin interrumpir la importación.
-     * @param f fichero ODS a importar; debe existir y ser no nulo
-     * @return número de bares incorporados con éxito al sistema
+     * Parsea la dirección física y carga todas las especialidades disponibles desde las columnas 5 en adelante.
+     * Las filas con datos inválidos o duplicados se descartan sin interrumpir la importación.
+     * @param f Fichero ODS a importar; debe existir y ser no nulo.
+     * @return Número de bares incorporados con éxito al sistema.
      */
     public int importaBares(File f) {
         int numeroBares = 0;
@@ -708,11 +979,23 @@ public class BusinessSystem implements LeisureOffice, LookupService {
                     if (posicion < 0) {
                         continue;
                     }
-                    String calle        = direccionCompleta.substring(0, posicion);
-                    String numeroString = direccionCompleta.substring(posicion + 1);
+                    String calle        = direccionCompleta.substring(0, posicion).trim();
+                    String numeroString = direccionCompleta.substring(posicion + 1).trim();
                     int numero = Integer.parseInt(numeroString);
 
                     Bar bar = new Bar(nombre, new Direccion(localidad, provincia, calle, numero), "");
+
+                    // Importar especialidades (tags) a partir de la columna 5
+                    for (int col = 5; col < tabla.getColumnCount(); col++) {
+                        try {
+                            Object tagObj = tabla.getCellAt(col, fila).getValue();
+                            if (tagObj != null && !tagObj.toString().trim().isEmpty()) {
+                                bar.agregarEspecialidad(tagObj.toString().trim());
+                            }
+                        } catch (IndexOutOfBoundsException e) {
+                            break;
+                        }
+                    }
 
                     if (this.nuevoLocal(bar)) {
                         numeroBares++;
@@ -729,20 +1012,20 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     }
 
     /**
-     * Obtiene un array con todos los locales registrados.
-     * @return un array de locales
+     * Obtiene un array con todos los locales registrados en el sistema.
+     * @return Array de locales registrados.
      */
     public Local[] obtenerTodosLosLocales() {
-        return locales.toArray(new Local[locales.size()]); // Devolvemos una copia para que no se modifique la original 
+        return locales.toArray(new Local[locales.size()]);
     }
 
     /**
      * Obtiene los dueños asociados a un local.
-     * @param l el local
-     * @return un array de dueños
+     * @param l El local a consultar.
+     * @return Array con los dueños del local, o array vacío si no tiene dueños asignados.
      */
     public Dueño[] obtenerDueñosDeLocal(Local l) {
-        if (propietariosDeLocal.containsKey(l)) {
+        if (l != null && propietariosDeLocal.containsKey(l)) {
             Set<Dueño> dueños = propietariosDeLocal.get(l);
             return dueños.toArray(new Dueño[dueños.size()]);
         }

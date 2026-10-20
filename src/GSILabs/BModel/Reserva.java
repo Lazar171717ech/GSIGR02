@@ -23,14 +23,14 @@ public class Reserva {
      * @param cliente el cliente que realiza la reserva
      * @param local el local reservable
      * @throws IllegalArgumentException si la fecha, hora, cliente o local son nulos, 
-     *                                  o si el descuento es negativo.
+     *                                  o si el descuento es menor que 0 o mayor que 100.
      */
     public Reserva(LocalDate fecha, LocalTime hora, float descuento, Cliente cliente, Reservable local) {
         if (fecha == null || hora == null || cliente == null || local == null) {
             throw new IllegalArgumentException("La fecha, la hora, el cliente y el local no pueden ser nulos.");
         }
-        if (descuento < 0) {
-            throw new IllegalArgumentException("El descuento no puede ser negativo.");
+        if (descuento < 0 || descuento > 100) {
+            throw new IllegalArgumentException("El porcentaje de descuento debe estar entre 0 y 100.");
         }
         
         this.fecha = fecha;
@@ -90,12 +90,12 @@ public class Reserva {
 
     /**
      * Establece el descuento de la reserva.
-     * @param descuento el nuevo descuento
-     * @throws IllegalArgumentException si el descuento es negativo
+     * @param descuento el nuevo descuento (entre 0 y 100)
+     * @throws IllegalArgumentException si el descuento es menor que 0 o mayor que 100
      */
     public void setDescuento(float descuento) {
-        if (descuento < 0) {
-            throw new IllegalArgumentException("El descuento no puede ser negativo.");
+        if (descuento < 0 || descuento > 100) {
+            throw new IllegalArgumentException("El porcentaje de descuento debe estar entre 0 y 100.");
         }
         this.descuento = descuento;
     }

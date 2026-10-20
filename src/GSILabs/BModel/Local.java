@@ -1,6 +1,5 @@
 package GSILabs.BModel;
 
-import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -18,17 +17,17 @@ public class Local {
      * @param nombre el nombre del local
      * @param direccion la dirección del local
      * @param descripcion la descripción del local
-     * @throws IllegalArgumentException si el nombre o la dirección son nulos
+     * @throws IllegalArgumentException si el nombre es nulo o vacío, o la dirección es nula
      */
     public Local(String nombre, Direccion direccion, String descripcion){
-        if(nombre == null){
-            throw new IllegalArgumentException("El nombre no puede ser nulo");
+        if(nombre == null || nombre.trim().isEmpty()){
+            throw new IllegalArgumentException("El nombre no puede ser nulo ni vacío");
         }
         if(direccion == null){
             throw new IllegalArgumentException("La dirección no puede ser nula");
         }
         
-        this.nombre = nombre;
+        this.nombre = nombre.trim();
         this.direccion = direccion;
         this.setDescripcion(descripcion);
     }
