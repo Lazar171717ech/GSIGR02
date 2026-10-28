@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * Representa una Contestación realizada por un Dueño a una Review existente.
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Contestacion {
 

@@ -12,7 +12,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * con las 5 filas y 3 columnas vacías especificadas en SSTest02 y la Figura 2.
  * Muestra los valores numéricos recuperados por consola.
  *
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest03 {
 

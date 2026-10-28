@@ -11,7 +11,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * de la matriz y guardamos el archivo. En caso de error, se detiene la ejecución
  * y se muestra en pantalla.
  * 
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest01 {  
     

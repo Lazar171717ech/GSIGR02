@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Representa una opinión (Review) dejada en el sistema por un Cliente acerca de
  * un Local.
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Review {
 

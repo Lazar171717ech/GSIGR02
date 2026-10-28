@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Representa un Bar que hereda de Local y es Reservable.
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Bar extends Local implements Reservable {
     

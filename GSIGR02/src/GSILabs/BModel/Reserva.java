@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /**
  * Representa una Reserva realizada por un Cliente en un Local reservable.
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Reserva {
     private LocalDate fecha;

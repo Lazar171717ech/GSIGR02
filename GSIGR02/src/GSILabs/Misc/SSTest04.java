@@ -22,7 +22,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * a razón de una fila por cada local, gestionando atributos escalares y de cardinalidad múltiple
  * (dueños, especialidades y capacidades) alineado estrictamente con la estructura de la Figura 3.
  *
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest04 {
 

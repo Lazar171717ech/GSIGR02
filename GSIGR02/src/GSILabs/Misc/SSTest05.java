@@ -10,7 +10,7 @@ import java.io.File;
  * El archivo de entrada esperado es P02Ej05.ods, ubicado en el directorio
  * raíz del proyecto.
  *
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class SSTest05 {
     

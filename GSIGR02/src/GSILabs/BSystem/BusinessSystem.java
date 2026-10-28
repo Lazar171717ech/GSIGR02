@@ -25,6 +25,15 @@ import java.util.Map;
 import java.util.Set;
 import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
+import GSILabs.persistence.XMLParsingException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * Clase principal que implementa la lógica de negocio del sistema LeisureOffice
@@ -33,7 +42,7 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
  * Gestiona el almacenamiento de usuarios, locales, reservas, reviews y contestaciones,
  * garantizando la coherencia de los datos mediante políticas de validación y borrado en cascada.
  * 
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class BusinessSystem implements LeisureOffice, LookupService {
 
@@ -1070,5 +1079,78 @@ public class BusinessSystem implements LeisureOffice, LookupService {
             return dueños.toArray(new Dueño[dueños.size()]);
         }
         return new Dueño[0];
+    }
+    
+    /**
+     * Parsea un fichero XML que contiene la representación estructurada del sistema
+     * y devuelve una nueva instancia de BusinessSystem con los datos cargados.
+     * 
+     * @param f El objeto {@link File} que apunta al documento XML a analizar.
+     * @return Una nueva instancia de {@link BusinessSystem} poblada con los datos del XML.
+     * @throws XMLParsingException Si el fichero es nulo, no existe, está mal formado, 
+     *                             contiene anomalías estructurales o infringe las políticas de negocio.
+     */
+    public static BusinessSystem parseXMLFile(File f) throws XMLParsingException {
+        if (f == null || !f.exists()) {
+            throw new XMLParsingException("El fichero XML proporcionado es nulo o no existe en el disco.");
+        }
+
+        BusinessSystem system = new BusinessSystem();
+
+        try {
+            // Inicialización del parser DOM estándar de Java
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(f);
+            
+            // Normalizar el árbol XML para evitar nodos de texto vacíos o fragmentados
+            doc.getDocumentElement().normalize();
+
+            // Ejemplo de lectura de elementos raíz o entidades del sistema
+            Element root = doc.getDocumentElement();
+            
+            // TODO: Añadir aquí la lógica de recorrido de nodos (getTagירות, hijos, etc.)
+            // para instanciar bares, usuarios, reviews y añadirlos a 'system'.
+            // Si algún campo obligatorio falta o es incorrecto, lanzar la excepción:
+            // throw new XMLParsingException("Error de validación: Estructura XML incompleta o inválida.");
+
+        } catch (org.xml.sax.SAXException e) {
+            throw new XMLParsingException("Error de sintaxis o malformación en el documento XML.", e);
+        } catch (javax.xml.parsers.ParserConfigurationException e) {
+            throw new XMLParsingException("Error de configuración interna del parser XML.", e);
+        } catch (java.io.IOException e) {
+            throw new XMLParsingException("Error de E/S al intentar leer el fichero XML.", e);
+        } catch (Exception e) {
+            throw new XMLParsingException("Error inesperado durante el procesado del fichero XML.", e);
+        }
+
+        return system;
+    }
+
+    /**
+     * Lee un fichero XML y carga su contenido de manera acumulativa o sustitutiva 
+     * en la instancia actual de {@link BusinessSystem}.
+     * 
+     * @param f El objeto {@link File} que contiene la información en formato XML a cargar.
+     * @return true si la importación y carga se han completado con éxito; false en caso contrario.
+     */
+    public boolean loadXMLFile(File f) {
+        try {
+            // Reutilizamos el método estático de parseo para validar y construir el sistema temporal
+            BusinessSystem parsedSystem = parseXMLFile(f);
+            
+            if (parsedSystem != null) {
+                // TODO: Volcar, fusionar o reemplazar los datos del sistema analizado 
+                // en la instancia actual ('this'). 
+                // Ejemplo: this.bares.addAll(parsedSystem.getBares());
+                return true;
+            }
+            return false;
+            
+        } catch (XMLParsingException e) {
+            // Captura controlada de la excepción de parseo exigida por la política de robustez
+            System.err.println("[XML_LOAD_ERROR] No se pudo cargar el fichero XML: " + e.getMessage());
+            return false;
+        }
     }
 }

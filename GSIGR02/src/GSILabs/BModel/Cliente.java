@@ -5,7 +5,7 @@ import java.time.LocalDate;
 
 /**
  * Clase que representa a un Cliente (tipo de Usuario).
- * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Cazalla, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
+ * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Cliente extends Usuario {
 
