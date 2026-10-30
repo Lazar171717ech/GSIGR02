@@ -1,12 +1,13 @@
 package GSILabs.BModel;
 
+import GSILabs.serializable.XMLRepresentable;
 import java.time.LocalTime;
 
 /**
  * Representa un Pub que hereda de Local.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Pub extends Local {
+public class Pub extends Local implements XMLRepresentable {
     
     private LocalTime horaApertura;
     private LocalTime horaClausura;
@@ -98,5 +99,25 @@ public class Pub extends Local {
             return false;
         }
         return super.equals(obj);
+    }
+
+    /**
+     * Genera la representación en formato XML del pub, incluyendo sus horarios.
+     * @return Cadena de texto con la estructura XML del objeto.
+     */
+    @Override
+    public String toXML() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<pub>\n");
+        sb.append("    <nombre>").append(escapeXML(getNombre())).append("</nombre>\n");
+        if (getDireccion() != null) {
+            String dirXml = getDireccion().toXML().replace("\n", "\n    ");
+            sb.append("    ").append(dirXml).append("\n");
+        }
+        sb.append("    <descripcion>").append(escapeXML(getDescripcion())).append("</descripcion>\n");
+        sb.append("    <horaApertura>").append(horaApertura != null ? horaApertura.toString() : "").append("</horaApertura>\n");
+        sb.append("    <horaClausura>").append(horaClausura != null ? horaClausura.toString() : "").append("</horaClausura>\n");
+        sb.append("</pub>");
+        return sb.toString();
     }
 }

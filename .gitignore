@@ -6,3 +6,4 @@ dist/
 /GSIGR02/dist/
 *.class
 *.pdf
+!*Gr*.pdf

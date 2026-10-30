@@ -1,10 +1,12 @@
 package GSILabs.BModel;
 
+import GSILabs.serializable.XMLRepresentable;
+
 /**
  * Representa un Restaurante que hereda de Local y es Reservable.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Restaurante extends Local implements Reservable{
+public class Restaurante extends Local implements Reservable, XMLRepresentable {
     
     private float precioEstimado;
     private int capacidadMaximaTotal;
@@ -131,5 +133,26 @@ public class Restaurante extends Local implements Reservable{
     @Override
     public String toString() {
         return "Restaurante{" + super.toString() + ", precioEstimado=" + precioEstimado + ", capacidadMaximaTotal=" + capacidadMaximaTotal + ", capacidadMaximaMesa=" + capacidadMaximaMesa + '}';
+    }
+
+    /**
+     * Genera la representación en formato XML del restaurante, incluyendo precio y capacidades.
+     * @return Cadena de texto con la estructura XML del objeto.
+     */
+    @Override
+    public String toXML() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<restaurante>\n");
+        sb.append("    <nombre>").append(escapeXML(getNombre())).append("</nombre>\n");
+        if (getDireccion() != null) {
+            String dirXml = getDireccion().toXML().replace("\n", "\n    ");
+            sb.append("    ").append(dirXml).append("\n");
+        }
+        sb.append("    <descripcion>").append(escapeXML(getDescripcion())).append("</descripcion>\n");
+        sb.append("    <precioEstimado>").append(precioEstimado).append("</precioEstimado>\n");
+        sb.append("    <capacidadMaximaTotal>").append(capacidadMaximaTotal).append("</capacidadMaximaTotal>\n");
+        sb.append("    <capacidadMaximaMesa>").append(capacidadMaximaMesa).append("</capacidadMaximaMesa>\n");
+        sb.append("</restaurante>");
+        return sb.toString();
     }
 }

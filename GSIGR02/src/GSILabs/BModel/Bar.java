@@ -1,5 +1,6 @@
 package GSILabs.BModel;
 
+import GSILabs.serializable.XMLRepresentable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import java.util.List;
  * Representa un Bar que hereda de Local y es Reservable.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Bar extends Local implements Reservable {
+public class Bar extends Local implements Reservable, XMLRepresentable {
     
    private List<String> especialidades;
    
@@ -71,5 +72,30 @@ public class Bar extends Local implements Reservable {
             return false;
         }
         return super.equals(obj);
+    }
+
+    /**
+     * Genera la representación en formato XML del bar, incluyendo sus especialidades.
+     * @return Cadena de texto con la estructura XML del objeto.
+     */
+    @Override
+    public String toXML() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<bar>\n");
+        sb.append("    <nombre>").append(escapeXML(getNombre())).append("</nombre>\n");
+        if (getDireccion() != null) {
+            String dirXml = getDireccion().toXML().replace("\n", "\n    ");
+            sb.append("    ").append(dirXml).append("\n");
+        }
+        sb.append("    <descripcion>").append(escapeXML(getDescripcion())).append("</descripcion>\n");
+        sb.append("    <especialidades>\n");
+        if (especialidades != null) {
+            for (String esp : especialidades) {
+                sb.append("        <especialidad>").append(escapeXML(esp)).append("</especialidad>\n");
+            }
+        }
+        sb.append("    </especialidades>\n");
+        sb.append("</bar>");
+        return sb.toString();
     }
 }

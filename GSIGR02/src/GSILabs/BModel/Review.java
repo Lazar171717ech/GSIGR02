@@ -1,5 +1,12 @@
 package GSILabs.BModel;
 
+import GSILabs.serializable.XMLRepresentable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -8,7 +15,7 @@ import java.util.Objects;
  * un Local.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Review {
+public class Review implements XMLRepresentable {
 
     private Cliente cliente;
     private Local local;
@@ -199,5 +206,84 @@ public class Review {
                 + ", valoracion=" + valoracion
                 + ", fechaVisita=" + fechaVisita
                 + '}';
+    }
+
+    /**
+     * Genera la representación en formato XML de la review, incluyendo el cliente y el local asociado.
+     * @return Cadena de texto con la estructura XML del objeto.
+     */
+    @Override
+    public String toXML() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<review>\n");
+        if (cliente != null) {
+            String cliXml = cliente.toXML().replace("\n", "\n    ");
+            sb.append("    ").append(cliXml).append("\n");
+        }
+        if (local != null) {
+            sb.append("    <local>\n");
+            String locXml = local.toXML().replace("\n", "\n        ");
+            sb.append("        ").append(locXml).append("\n");
+            sb.append("    </local>\n");
+        }
+        sb.append("    <valoracion>").append(valoracion).append("</valoracion>\n");
+        sb.append("    <comentario>").append(escapeXML(comentario)).append("</comentario>\n");
+        sb.append("    <fechaVisita>").append(fechaVisita != null ? fechaVisita.toString() : "").append("</fechaVisita>\n");
+        sb.append("    <fechaGeneracion>").append(fechaGeneracion != null ? fechaGeneracion.toString() : "").append("</fechaGeneracion>\n");
+        sb.append("</review>");
+        return sb.toString();
+    }
+
+    /**
+     * Guarda la representación XML de la review en el fichero especificado.
+     * @param f Fichero de destino.
+     * @return true si se guardó con éxito; false en caso de error.
+     */
+    @Override
+    public boolean saveToXML(File f) {
+        if (f == null) {
+            return false;
+        }
+        try {
+            File parent = f.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try (PrintWriter writer = new PrintWriter(
+                    new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
+                String xml = toXML();
+                if (!xml.startsWith("<?xml")) {
+                    writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                }
+                writer.print(xml);
+                return true;
+            }
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Guarda la representación XML de la review en la ruta de fichero especificada.
+     * @param filePath Ruta del fichero de destino.
+     * @return true si se guardó con éxito; false en caso de error o ruta inválida.
+     */
+    @Override
+    public boolean saveToXML(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty()) {
+            return false;
+        }
+        return saveToXML(new File(filePath.trim()));
+    }
+
+    private static String escapeXML(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&apos;");
     }
 }

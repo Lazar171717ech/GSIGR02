@@ -1,5 +1,12 @@
 package GSILabs.BModel;
 
+import GSILabs.serializable.XMLRepresentable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Objects;
@@ -8,7 +15,7 @@ import java.util.Objects;
  * Clase abstracta Usuario, esto se debe a que no puede existir un Usuario, sino que un Cliente o un Dueño.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public abstract class Usuario {
+public abstract class Usuario implements XMLRepresentable {
     
     private String nick;
     private String password;
@@ -115,5 +122,65 @@ public abstract class Usuario {
     @Override
     public int hashCode() {
         return Objects.hash(nick);
+    }
+
+    /**
+     * Genera la representación en formato XML del usuario.
+     * @return Cadena de texto con la estructura XML del objeto.
+     */
+    @Override
+    public abstract String toXML();
+
+    /**
+     * Guarda la representación XML del usuario en el fichero especificado.
+     * @param f Fichero de destino.
+     * @return true si se guardó con éxito; false en caso de error.
+     */
+    @Override
+    public boolean saveToXML(File f) {
+        if (f == null) {
+            return false;
+        }
+        try {
+            File parent = f.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try (PrintWriter writer = new PrintWriter(
+                    new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
+                String xml = toXML();
+                if (!xml.startsWith("<?xml")) {
+                    writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                }
+                writer.print(xml);
+                return true;
+            }
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Guarda la representación XML del usuario en la ruta de fichero especificada.
+     * @param filePath Ruta del fichero de destino.
+     * @return true si se guardó con éxito; false en caso de error o ruta inválida.
+     */
+    @Override
+    public boolean saveToXML(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty()) {
+            return false;
+        }
+        return saveToXML(new File(filePath.trim()));
+    }
+
+    protected static String escapeXML(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&apos;");
     }
 }
