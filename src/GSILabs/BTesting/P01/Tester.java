@@ -25,9 +25,7 @@ public class Tester {
      * @param args los argumentos de la línea de comandos
      */
     public static void main(String[] args) {
-        System.out.println("================================================================================");
-        System.out.println("        INICIANDO BATERÍA DE CONTROLES POSITIVOS Y SUCESOS S1 - S10             ");
-        System.out.println("================================================================================\n");
+        System.out.println("=== Pruebas Práctica 01 (Controles positivos y S1 - S10) ===\n");
 
         BusinessSystem bs = new BusinessSystem();
 
@@ -197,8 +195,6 @@ public class Tester {
         boolean s10 = (revA_ok && !revB_ok);
         System.out.println("S10 (Impedir doble review del mismo cliente y visita para el mismo local): " + (s10 ? "ÉXITO" : "FALLO"));
 
-        System.out.println("\n================================================================================");
-        System.out.println("           BATERÍA DE PRUEBAS COMPLETADA SATISFACTORIAMENTE                     ");
-        System.out.println("================================================================================");
+        System.out.println("\n=== Fin de las pruebas de la Práctica 01 ===");
     }
 }

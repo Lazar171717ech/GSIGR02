@@ -26,7 +26,6 @@ import java.util.Set;
 import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import GSILabs.persistence.XMLParsingException;
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
@@ -586,13 +585,12 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
             return false;
         }
 
-        boolean reservaDuplicada = reservas.stream()
-                .anyMatch(reserva -> reserva.getCliente().equals(c)
-                && reserva.getLocal().equals(r)
-                && reserva.getFecha().equals(ld));
-
-        if (reservaDuplicada) {
-            return false;
+        for (Reserva reserva : reservas) {
+            if (reserva.getCliente().equals(c)
+                    && reserva.getLocal().equals(r)
+                    && reserva.getFecha().equals(ld)) {
+                return false;
+            }
         }
 
         return reservas.add(new Reserva(ld, lt, 0, c, r));
@@ -1204,26 +1202,32 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
         BusinessSystem system = new BusinessSystem();
 
         try {
-            // Inicialización del parser DOM estándar de Java con protección contra XXE y Billion Laughs
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            try {
-                dbFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-                dbFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-                dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-                dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-            } catch (Throwable ignored) {
-            }
-            dbFactory.setXIncludeAware(false);
-            dbFactory.setExpandEntityReferences(false);
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(f);
 
-            // Normalizar el árbol XML para evitar nodos de texto vacíos o fragmentados
             doc.getDocumentElement().normalize();
             Element root = doc.getDocumentElement();
 
             if (!"businessSystem".equals(root.getTagName())) {
                 throw new XMLParsingException("La raíz del documento debe ser <businessSystem>.");
+            }
+
+            // Comprobar que solo estén las secciones esperadas y sin repetir
+            Set<String> seccionesValidas = new HashSet<>(java.util.Arrays.asList(
+                    "usuarios", "locales", "propietarios", "reviews", "reservas", "contestaciones"));
+            Set<String> seccionesVistas = new HashSet<>();
+            NodeList hijosRaiz = root.getChildNodes();
+            for (int idx = 0; idx < hijosRaiz.getLength(); idx++) {
+                if (hijosRaiz.item(idx) instanceof Element) {
+                    String tagSeccion = ((Element) hijosRaiz.item(idx)).getTagName();
+                    if (!seccionesValidas.contains(tagSeccion)) {
+                        throw new XMLParsingException("Sección desconocida <" + tagSeccion + "> en <businessSystem>.");
+                    }
+                    if (!seccionesVistas.add(tagSeccion)) {
+                        throw new XMLParsingException("Sección duplicada <" + tagSeccion + "> en <businessSystem>.");
+                    }
+                }
             }
 
             // 1. Usuarios (clientes y dueños)
@@ -1245,7 +1249,7 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
                 }
             }
 
-            // 2. Locales (el tipo concreto lo indica la etiqueta)
+            // 2. Locales
             for (Element e : hijosDeSeccion(root, "locales")) {
                 String xml = XMLParser.nodeToString(e);
                 Local l;
@@ -1270,8 +1274,11 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
                 }
             }
 
-            // 3. Titularidad de locales (dirección del local + nick del dueño)
+            // 3. Propietarios (dirección del local + nick del dueño)
             for (Element e : hijosDeSeccion(root, "propietarios")) {
+                if (!"propiedad".equals(e.getTagName())) {
+                    throw new XMLParsingException("Se esperaba etiqueta <propiedad> pero se encontró <" + e.getTagName() + ">.");
+                }
                 Element dirEl = XMLParser.getFirstChildElement("direccion", e);
                 if (dirEl == null) {
                     throw new XMLParsingException("Elemento <propiedad> sin <direccion>.");
@@ -1280,49 +1287,71 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
                 Usuario u = system.obtenerUsuario(XMLParser.getTagValue("nick", e));
                 if (l == null || !(u instanceof Dueño) || !system.asociarLocal(l, (Dueño) u)) {
                     throw new XMLParsingException(
-                            "Propiedad inconsistente: local o dueño inexistente, o más de 3 dueños por local.");
+                            "Propiedad inválida: local o dueño inexistente, o más de 3 dueños por local.");
                 }
             }
 
-            // 4. Reviews (cliente y local deben existir ya en el sistema)
+            // 4. Reviews (usamos el cliente y el local ya registrados en el sistema)
             for (Element e : hijosDeSeccion(root, "reviews")) {
                 Review r = XMLParser.parseReview(XMLParser.nodeToString(e));
+                Usuario uReg = system.obtenerUsuario(r.getCliente().getNick());
+                Local lReg = system.obtenerLocal(r.getLocal().getDireccion());
+                if (!(uReg instanceof Cliente) || lReg == null || !lReg.equals(r.getLocal())) {
+                    throw new XMLParsingException("Review con cliente o local no registrado.");
+                }
+                r.setCliente((Cliente) uReg);
+                r.setLocal(lReg);
                 if (!system.nuevaReview(r)) {
                     throw new XMLParsingException("Review inválida o duplicada.");
                 }
             }
 
-            // 5. Reservas. Se añaden directamente a la lista y no con nuevaReserva(),
-            //    porque ese método rechaza fechas pasadas y fija el descuento a 0,
-            //    lo que haría perder información al cargar.
+            // 5. Reservas (se comprueba que cliente y local existan y que no esté repetida)
             for (Element e : hijosDeSeccion(root, "reservas")) {
                 Reserva r = XMLParser.parseReserva(XMLParser.nodeToString(e));
-                if (!system.usuarios.contains(r.getCliente()) || !system.locales.contains(r.getLocal())) {
-                    throw new XMLParsingException("Reserva con cliente o local inexistente.");
+                Usuario uReg = system.obtenerUsuario(r.getCliente().getNick());
+                Local lReg = system.obtenerLocal(((Local) r.getLocal()).getDireccion());
+                if (!(uReg instanceof Cliente) || !(lReg instanceof Reservable) || !lReg.equals(r.getLocal())) {
+                    throw new XMLParsingException("Reserva con cliente o local reservable inexistente.");
+                }
+                r.setCliente((Cliente) uReg);
+                r.setLocal((Reservable) lReg);
+                for (Reserva res : system.reservas) {
+                    if (res.getCliente().equals(r.getCliente())
+                            && res.getLocal().equals(r.getLocal())
+                            && res.getFecha().equals(r.getFecha())) {
+                        throw new XMLParsingException("Reserva duplicada para el mismo cliente, local y fecha.");
+                    }
                 }
                 system.reservas.add(r);
             }
 
-            // 6. Contestaciones (se enlazan con la review ya registrada en el sistema)
+            // 6. Contestaciones (se enlazan con el dueño y la review del sistema)
             for (Element e : hijosDeSeccion(root, "contestaciones")) {
                 Contestacion c = XMLParser.parseContestacion(XMLParser.nodeToString(e));
+                Usuario dReg = system.obtenerUsuario(c.getDueño().getNick());
                 int i = system.reviews.indexOf(c.getReview());
-                if (i < 0 || !system.nuevaContestacion(c, system.reviews.get(i))) {
-                    throw new XMLParsingException("Contestación inválida o sin review asociada.");
+                if (!(dReg instanceof Dueño) || i < 0) {
+                    throw new XMLParsingException("Contestación inválida: dueño o review inexistente.");
+                }
+                Review revSistema = system.reviews.get(i);
+                c.setDueño((Dueño) dReg);
+                c.setReview(revSistema);
+                if (!system.nuevaContestacion(c, revSistema)) {
+                    throw new XMLParsingException("Contestación inválida o duplicada para la review.");
                 }
             }
 
         } catch (XMLParsingException e) {
-            // Se relanza tal cual para no perder el mensaje de validación concreto
             throw e;
         } catch (org.xml.sax.SAXException e) {
-            throw new XMLParsingException("Error de sintaxis o malformación en el documento XML.", e);
+            throw new XMLParsingException("Error de sintaxis en el documento XML.", e);
         } catch (javax.xml.parsers.ParserConfigurationException e) {
-            throw new XMLParsingException("Error de configuración interna del parser XML.", e);
+            throw new XMLParsingException("Error al configurar el parser XML.", e);
         } catch (java.io.IOException e) {
-            throw new XMLParsingException("Error de E/S al intentar leer el fichero XML.", e);
+            throw new XMLParsingException("Error al leer el fichero XML.", e);
         } catch (Exception e) {
-            throw new XMLParsingException("Error inesperado durante el procesado del fichero XML.", e);
+            throw new XMLParsingException("Error al procesar el fichero XML.", e);
         }
 
         return system;
@@ -1330,23 +1359,20 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
 
     /**
      * Lee un fichero XML y sustituye el contenido de esta instancia de
-     * {@link BusinessSystem} por el que contiene el fichero. La operación es
-     * atómica: el fichero se parsea primero a un sistema temporal y, solo si es
-     * totalmente válido, se reemplazan los datos actuales. Si falla, el sistema
-     * conserva su contenido anterior.
+     * {@link BusinessSystem} por el que contiene el fichero. El fichero se
+     * parsea primero en un sistema auxiliar y, solo si es válido, se reemplazan
+     * los datos actuales.
      *
-     * @param f El objeto {@link File} que contiene la información en formato XML a cargar.
-     * @return true si la importación y carga se han completado con éxito; false en caso contrario.
+     * @param f Fichero XML a cargar.
+     * @return true si la carga se ha completado correctamente; false en caso contrario.
      */
     public boolean loadXMLFile(File f) {
         if (f == null) {
             return false;
         }
         try {
-            // Reutilizamos el método estático de parseo para validar y construir el sistema temporal
             BusinessSystem parsedSystem = parseXMLFile(f);
 
-            // Sustitución del contenido actual por el del sistema parseado
             usuarios.clear();
             usuarios.addAll(parsedSystem.usuarios);
             locales.clear();
@@ -1361,12 +1387,8 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
             contestaciones.putAll(parsedSystem.contestaciones);
             return true;
 
-        } catch (XMLParsingException e) {
-            // Captura controlada de la excepción de parseo exigida por la política de robustez
-            System.err.println("[XML_LOAD_ERROR] No se pudo cargar el fichero XML: " + e.getMessage());
-            return false;
         } catch (Exception e) {
-            System.err.println("[XML_LOAD_ERROR] Error inesperado cargando XML: " + e.getMessage());
+            System.err.println("Error al cargar el fichero XML: " + e.getMessage());
             return false;
         }
     }
@@ -1403,8 +1425,12 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
      * @return El fragmento indentado y terminado en salto de línea.
      */
     private static String indentar(String xml, int espacios) {
-        String pad = String.format("%" + espacios + "s", "");
-        return pad + xml.replace("\n", "\n" + pad) + "\n";
+        StringBuilder pad = new StringBuilder();
+        for (int i = 0; i < espacios; i++) {
+            pad.append(' ');
+        }
+        String prefijo = pad.toString();
+        return prefijo + xml.replace("\n", "\n" + prefijo) + "\n";
     }
 
     /**

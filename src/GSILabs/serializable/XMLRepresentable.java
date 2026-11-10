@@ -20,10 +20,27 @@ import java.io.File;
  */
 public interface XMLRepresentable {
     
+    /**
+     * Genera la representación en formato XML de la instancia actual.
+     *
+     * @return Cadena de texto con la representación XML del objeto.
+     */
     public String toXML();
     
+    /**
+     * Almacena la representación XML de la instancia actual en el fichero indicado.
+     *
+     * @param f Fichero de destino donde se guardará el XML.
+     * @return true si el almacenamiento se completó con éxito; false en caso contrario.
+     */
     public boolean saveToXML(File f);
     
+    /**
+     * Almacena la representación XML de la instancia actual en la ruta especificada.
+     *
+     * @param filePath Ruta del fichero de destino.
+     * @return true si el almacenamiento se completó con éxito; false en caso contrario.
+     */
     public boolean saveToXML(String filePath);
     
 }

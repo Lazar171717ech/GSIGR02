@@ -236,24 +236,22 @@ public class Reserva implements XMLRepresentable {
      */
     @Override
     public boolean saveToXML(File f) {
-        if (f == null) {
+        if (f == null || (f.exists() && f.isDirectory())) {
             return false;
         }
         try {
-            File parent = f.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
+            File parent = f.getAbsoluteFile().getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                return false;
             }
             try (PrintWriter writer = new PrintWriter(
                     new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
-                String xml = toXML();
-                if (!xml.startsWith("<?xml")) {
-                    writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-                }
-                writer.print(xml);
-                return true;
+                writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                writer.print(toXML());
+                writer.flush();
+                return !writer.checkError();
             }
-        } catch (IOException e) {
+        } catch (IOException | SecurityException e) {
             return false;
         }
     }

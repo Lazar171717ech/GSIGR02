@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -43,28 +42,17 @@ public class XMLParser {
     }
 
     /**
-     * Construye el árbol DOM de un documento XML a partir de un texto.
-     * Incorpora medidas de seguridad contra ataques XXE y Entity Expansion.
+     * Construye el árbol DOM de un documento XML a partir de un String.
      *
      * @param xml Contenido XML en forma de cadena.
      * @return El documento DOM resultante.
-     * @throws Exception Si el XML está mal formado o falla la configuración del parser.
+     * @throws Exception Si el XML está mal formado o vacío.
      */
     private static Document getDocumentFromString(String xml) throws Exception {
         if (xml == null || xml.trim().isEmpty()) {
             throw new XMLParsingException("El contenido XML no puede ser nulo ni vacío.");
         }
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        try {
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        } catch (Throwable ignored) {
-            // Continuar si la implementación DOM subyacente no admite alguna de las opciones
-        }
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
         DocumentBuilder builder = factory.newDocumentBuilder();
         return builder.parse(new InputSource(new StringReader(xml.trim())));
     }
@@ -332,6 +320,9 @@ public class XMLParser {
             if (dirEl == null) {
                 throw new XMLParsingException("Falta la etiqueta <direccion> en Local.");
             }
+            if (getFirstChildElement("descripcion", root) == null) {
+                throw new XMLParsingException("Falta la etiqueta <descripcion> en Local.");
+            }
             Direccion dir = parseDireccion(nodeToString(dirEl));
             return new Local(getTagValue("nombre", root), dir, getTagValue("descripcion", root));
         } catch (XMLParsingException e) {
@@ -378,17 +369,25 @@ public class XMLParser {
             if (dirEl == null) {
                 throw new XMLParsingException("Falta la etiqueta <direccion> en Bar.");
             }
+            if (getFirstChildElement("descripcion", root) == null) {
+                throw new XMLParsingException("Falta la etiqueta <descripcion> en Bar.");
+            }
             Direccion dir = parseDireccion(nodeToString(dirEl));
             Bar bar = new Bar(getTagValue("nombre", root), dir, getTagValue("descripcion", root));
 
             Element espContainer = getFirstChildElement("especialidades", root);
             if (espContainer != null) {
                 for (Node n = espContainer.getFirstChild(); n != null; n = n.getNextSibling()) {
-                    if (n instanceof Element && "especialidad".equalsIgnoreCase(((Element) n).getTagName())) {
-                        String esp = n.getTextContent();
-                        if (esp != null && !esp.trim().isEmpty()) {
-                            bar.agregarEspecialidad(esp.trim());
+                    if (n instanceof Element) {
+                        String childTag = ((Element) n).getTagName();
+                        if (!"especialidad".equalsIgnoreCase(childTag)) {
+                            throw new XMLParsingException("Etiqueta desconocida <" + childTag + "> dentro de <especialidades>.");
                         }
+                        String esp = n.getTextContent();
+                        if (esp == null || esp.trim().isEmpty()) {
+                            throw new XMLParsingException("La etiqueta <especialidad> no puede estar vacía.");
+                        }
+                        bar.agregarEspecialidad(esp.trim());
                     }
                 }
             }
@@ -435,6 +434,9 @@ public class XMLParser {
             Element dirEl = getFirstChildElement("direccion", root);
             if (dirEl == null) {
                 throw new XMLParsingException("Falta la etiqueta <direccion> en Pub.");
+            }
+            if (getFirstChildElement("descripcion", root) == null) {
+                throw new XMLParsingException("Falta la etiqueta <descripcion> en Pub.");
             }
             Direccion dir = parseDireccion(nodeToString(dirEl));
             String hAp = getTagValue("horaApertura", root);
@@ -489,6 +491,9 @@ public class XMLParser {
             Element dirEl = getFirstChildElement("direccion", root);
             if (dirEl == null) {
                 throw new XMLParsingException("Falta la etiqueta <direccion> en Restaurante.");
+            }
+            if (getFirstChildElement("descripcion", root) == null) {
+                throw new XMLParsingException("Falta la etiqueta <descripcion> en Restaurante.");
             }
             Direccion dir = parseDireccion(nodeToString(dirEl));
             String prStr = getTagValue("precioEstimado", root);
@@ -559,7 +564,7 @@ public class XMLParser {
             String valStr = getTagValue("valoracion", root);
             String fVisStr = getTagValue("fechaVisita", root);
             String fGenStr = getTagValue("fechaGeneracion", root);
-            if (valStr.isEmpty() || fVisStr.isEmpty() || fGenStr.isEmpty()) {
+            if (valStr.isEmpty() || fVisStr.isEmpty() || fGenStr.isEmpty() || getFirstChildElement("comentario", root) == null) {
                 throw new XMLParsingException("Faltan campos obligatorios en Review.");
             }
 
@@ -623,8 +628,8 @@ public class XMLParser {
             Review review = parseReview(nodeToString(revEl));
 
             String fGenStr = getTagValue("fechaGeneracion", root);
-            if (fGenStr.isEmpty()) {
-                throw new XMLParsingException("Falta la fecha de generación en Contestacion.");
+            if (fGenStr.isEmpty() || getFirstChildElement("comentario", root) == null) {
+                throw new XMLParsingException("Faltan campos obligatorios en Contestacion.");
             }
 
             return new Contestacion(

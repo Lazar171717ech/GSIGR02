@@ -24,10 +24,22 @@ import java.time.LocalTime;
  */
 public class P03Tester {
 
+    /**
+     * Constructor por defecto de P03Tester.
+     */
+    public P03Tester() {
+    }
+
     private static void resultado(String test, boolean ok) {
         System.out.println("[" + test + " - " + (ok ? "ÉXITO" : "FALLO") + "]");
     }
 
+    /**
+     * Ejecuta las pruebas de persistencia y carga de ficheros XML de BusinessSystem.
+     *
+     * @param args Argumentos de línea de comandos (no utilizados).
+     * @throws IOException Si ocurre un error al preparar los ficheros temporales de prueba.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println("=== INICIO DE PRUEBAS DE LA PRÁCTICA 03 (XML) ===");
 

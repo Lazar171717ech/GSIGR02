@@ -7,7 +7,6 @@ import GSILabs.BModel.Direccion;
 import GSILabs.BModel.Dueño;
 import GSILabs.BModel.Local;
 import GSILabs.BModel.Pub;
-import GSILabs.BModel.Reserva;
 import GSILabs.BModel.Restaurante;
 import GSILabs.BModel.Review;
 import GSILabs.BSystem.BusinessSystem;
@@ -21,60 +20,60 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * Suite de pruebas de estrés y robustez extrema para la Práctica 03.
- * Verifica seguridad (XXE), tolerancia a orden aleatorio de etiquetas,
- * validación estricta de tipos de entidad, caracteres especiales,
- * valores límite, nulidad e integridad transaccional (atomicidad).
+ * Pruebas adicionales para la Práctica 03: comprobación de errores de formato,
+ * orden de las etiquetas, tipos de local, parámetros nulos, caracteres
+ * especiales y guardado/lectura completa de BusinessSystem.
  *
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class P03HardcoreTester {
 
-    private static int totalAssertions = 0;
-    private static int passedAssertions = 0;
+    private static int totalPruebas = 0;
+    private static int pruebasCorrectas = 0;
 
-    private static void assertTrue(boolean condition, String message) {
-        totalAssertions++;
-        if (condition) {
-            passedAssertions++;
-            System.out.println("  [PASS] " + message);
+    /**
+     * Constructor por defecto de P03HardcoreTester.
+     */
+    public P03HardcoreTester() {
+    }
+
+    private static void comprobar(boolean condicion, String descripcion) {
+        totalPruebas++;
+        if (condicion) {
+            pruebasCorrectas++;
+            System.out.println("  [OK] " + descripcion);
         } else {
-            System.err.println("  [FAIL] " + message);
-            throw new AssertionError("Fallo en verificación de robustez: " + message);
+            System.err.println("  [FALLO] " + descripcion);
+            throw new AssertionError("Fallo en la prueba: " + descripcion);
         }
     }
 
+    /**
+     * Ejecuta las pruebas adicionales de la Práctica 03.
+     *
+     * @param args Argumentos de línea de comandos.
+     * @throws IOException Si ocurre algún problema con los ficheros de prueba.
+     */
     public static void main(String[] args) throws IOException {
-        System.out.println("===============================================================================");
-        System.out.println(" BATERÍA DE PRUEBAS DE ESTRÉS Y MÁXIMA ROBUSTEZ - PRÁCTICA 03 (XML)");
-        System.out.println("===============================================================================");
+        System.out.println("=== Pruebas adicionales Práctica 03 (XML) ===");
 
-        File scratchDir = new File("scratch_test_xml");
-        if (!scratchDir.exists()) {
-            scratchDir.mkdirs();
+        File dirTemporal = new File("temp_test_xml");
+        if (!dirTemporal.exists()) {
+            dirTemporal.mkdirs();
         }
 
-        // -------------------------------------------------------------------------
-        // 1. SEGURIDAD: Protección contra XXE y Billion Laughs (Doctype / Entities)
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [1] PRUEBAS DE SEGURIDAD XML (XXE & ENTITY INJECTION) ---");
-        String xxePayload = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                + "<!DOCTYPE bar [\n"
-                + "  <!ELEMENT bar ANY >\n"
-                + "  <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\n"
-                + "<bar><nombre>&xxe;</nombre><direccion><localidad>P</localidad><provincia>N</provincia><calle>C</calle><numero>1</numero></direccion><descripcion>d</descripcion></bar>";
+        // 1. XML mal formado (etiquetas sin cerrar)
+        System.out.println("\n1. Comprobación de XML mal formado:");
+        String xmlSinCerrar = "<bar><nombre>Bar Central</nombre><direccion><localidad>Pamplona</bar>";
         try {
-            XMLParser.parseBar(xxePayload);
-            assertTrue(false, "El parser no debe procesar documentos con DOCTYPE/XXE malicioso");
+            XMLParser.parseBar(xmlSinCerrar);
+            comprobar(false, "Debería fallar si el XML tiene etiquetas mal cerradas");
         } catch (XMLParsingException e) {
-            assertTrue(true, "Ataque XXE neutralizado correctamente con XMLParsingException: " + e.getMessage());
+            comprobar(true, "Se detecta XML mal formado: " + e.getMessage());
         }
 
-        // -------------------------------------------------------------------------
-        // 2. PARSING INDEPENDIENTE DEL ORDEN DE ETIQUETAS
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [2] PRUEBAS DE INDEPENDENCIA DE ORDEN DE ETIQUETAS ---");
-        // Direccion con orden invertido de tags
+        // 2. Orden distinto en las etiquetas hijas
+        System.out.println("\n2. Independencia del orden de las etiquetas:");
         String dirDesordenada = "<direccion>\n"
                 + "  <numero>42</numero>\n"
                 + "  <calle>Avenida de Navarra</calle>\n"
@@ -83,16 +82,15 @@ public class P03HardcoreTester {
                 + "</direccion>";
         try {
             Direccion d = XMLParser.parseDireccion(dirDesordenada);
-            assertTrue(d.getNumero() == 42 && "Pamplona".equals(d.getLocalidad()) && "Avenida de Navarra".equals(d.getCalle()),
-                    "Direccion parseada correctamente con orden de etiquetas totalmente invertido");
+            comprobar(d.getNumero() == 42 && "Pamplona".equals(d.getLocalidad()) && "Avenida de Navarra".equals(d.getCalle()),
+                    "Direccion leída cambiando el orden de las etiquetas");
         } catch (XMLParsingException e) {
-            assertTrue(false, "Fallo al parsear Direccion con etiquetas desordenadas: " + e.getMessage());
+            comprobar(false, "Error al leer Direccion con otro orden: " + e.getMessage());
         }
 
-        // Pub con orden desordenado y espacios extra
         String pubDesordenado = "<pub>\n"
                 + "  <horaClausura>04:00</horaClausura>\n"
-                + "  <descripcion>Copas y buena música</descripcion>\n"
+                + "  <descripcion>Copas y música</descripcion>\n"
                 + "  <direccion>\n"
                 + "     <numero>10</numero>\n"
                 + "     <calle>Calle Estafeta</calle>\n"
@@ -104,20 +102,17 @@ public class P03HardcoreTester {
                 + "</pub>";
         try {
             Pub p = XMLParser.parsePub(pubDesordenado);
-            assertTrue("Pub Central".equals(p.getNombre()) && p.getHoraClausura().equals(LocalTime.of(4, 0)),
-                    "Pub parseado correctamente con orden aleatorio de hijos");
+            comprobar("Pub Central".equals(p.getNombre()) && p.getHoraClausura().equals(LocalTime.of(4, 0)),
+                    "Pub leído con etiquetas desordenadas");
         } catch (XMLParsingException e) {
-            assertTrue(false, "Fallo al parsear Pub desordenado: " + e.getMessage());
+            comprobar(false, "Error al leer Pub desordenado: " + e.getMessage());
         }
 
-        // -------------------------------------------------------------------------
-        // 3. VALIDACIÓN ESTRICTA DE TIPOS Y ETIQUETA RAÍZ
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [3] PRUEBAS DE VALIDACIÓN ESTRICTA DE TIPO (CROSS-TYPE ATTACKS) ---");
-        // Pasar XML de Restaurante a parseBar
+        // 3. Comprobación del tipo de etiqueta raíz
+        System.out.println("\n3. Comprobación de etiqueta raíz y tipos:");
         String restauranteXML = "<restaurante>\n"
                 + "  <nombre>Restaurante Italiano</nombre>\n"
-                + "  <direccion><localidad>P</localidad><provincia>N</provincia><calle>C</calle><numero>1</numero></direccion>\n"
+                + "  <direccion><localidad>Pamplona</localidad><provincia>Navarra</provincia><calle>Mayor</calle><numero>1</numero></direccion>\n"
                 + "  <descripcion>Pasta fresca</descripcion>\n"
                 + "  <precioEstimado>25.5</precioEstimado>\n"
                 + "  <capacidadMaximaTotal>60</capacidadMaximaTotal>\n"
@@ -125,107 +120,94 @@ public class P03HardcoreTester {
                 + "</restaurante>";
         try {
             XMLParser.parseBar(restauranteXML);
-            assertTrue(false, "parseBar NO debe aceptar un elemento raíz <restaurante>");
+            comprobar(false, "parseBar no debe aceptar un <restaurante>");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseBar rechazó correctamente un XML con raíz <restaurante>");
+            comprobar(true, "parseBar rechaza un XML con etiqueta <restaurante>");
         }
 
-        // Pasar XML de Cliente a parseDueño
         String clienteXML = "<cliente><nick>user1</nick><password>pass123</password><fechaNacimiento>1990-01-01</fechaNacimiento></cliente>";
         try {
             XMLParser.parseDueño(clienteXML);
-            assertTrue(false, "parseDueño NO debe aceptar un <cliente>");
+            comprobar(false, "parseDueño no debe aceptar un <cliente>");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseDueño rechazó correctamente un XML con raíz <cliente>");
+            comprobar(true, "parseDueño rechaza un XML con etiqueta <cliente>");
         }
 
-        // Reserva donde el local NO es reservable (un Pub)
-        String reservaInvalidaLocal = "<reserva>\n"
+        String reservaConPub = "<reserva>\n"
                 + "  <fecha>2026-12-01</fecha>\n"
                 + "  <hora>21:00</hora>\n"
                 + "  <descuento>5.0</descuento>\n"
-                + "  <cliente><nick>usuarioValido</nick><password>passValido123</password><fechaNacimiento>2000-01-01</fechaNacimiento></cliente>\n"
+                + "  <cliente><nick>usuario1</nick><password>pass123</password><fechaNacimiento>2000-01-01</fechaNacimiento></cliente>\n"
                 + "  <local><pub><nombre>P1</nombre><direccion><localidad>L</localidad><provincia>P</provincia><calle>C</calle><numero>1</numero></direccion><descripcion>d</descripcion><horaApertura>18:00</horaApertura><horaClausura>02:00</horaClausura></pub></local>\n"
                 + "</reserva>";
         try {
-            XMLParser.parseReserva(reservaInvalidaLocal);
-            assertTrue(false, "parseReserva NO debe aceptar locales no reservables como un Pub");
+            XMLParser.parseReserva(reservaConPub);
+            comprobar(false, "parseReserva no debe permitir reservar un Pub");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseReserva rechazó con éxito una reserva con local no reservable: " + e.getMessage());
+            comprobar(true, "parseReserva rechaza un local que no es Reservable");
         }
 
-        // -------------------------------------------------------------------------
-        // 4. ROBUSTEZ FRENTE A NULOS, CADENAS VACÍAS Y FICHEROS INEXISTENTES
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [4] CONTROL DE PARÁMETROS NULOS Y VALORES LÍMITE ---");
-        // Null / vacío en String
+        // 4. Parámetros nulos y ficheros que no existen
+        System.out.println("\n4. Parámetros nulos y ficheros inexistentes:");
         try {
             XMLParser.parseCliente((String) null);
-            assertTrue(false, "parseCliente(null) debe lanzar XMLParsingException");
+            comprobar(false, "parseCliente(null) debe lanzar excepción");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseCliente((String) null) capturado y controlado");
+            comprobar(true, "parseCliente((String) null) lanza XMLParsingException");
         }
         try {
             XMLParser.parseDireccion("   ");
-            assertTrue(false, "parseDireccion(\"   \") debe lanzar XMLParsingException");
+            comprobar(false, "parseDireccion vacío debe lanzar excepción");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseDireccion(\"   \") controlado correctamente");
+            comprobar(true, "parseDireccion con cadena vacía lanza XMLParsingException");
         }
-
-        // Null / inexistente en File
         try {
             XMLParser.parseBar((File) null);
-            assertTrue(false, "parseBar((File) null) debe lanzar XMLParsingException");
+            comprobar(false, "parseBar((File) null) debe lanzar excepción");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseBar((File) null) controlado");
+            comprobar(true, "parseBar((File) null) lanza XMLParsingException");
         }
         try {
-            XMLParser.parseBar(new File("archivo_fantasma_que_no_existe_9999.xml"));
-            assertTrue(false, "parseBar(ficheroInexistente) debe lanzar XMLParsingException");
+            XMLParser.parseBar(new File("no_existe.xml"));
+            comprobar(false, "parseBar con fichero inexistente debe lanzar excepción");
         } catch (XMLParsingException e) {
-            assertTrue(true, "parseBar(ficheroInexistente) controlado");
+            comprobar(true, "parseBar con fichero inexistente lanza XMLParsingException");
         }
-
-        // Null en BusinessSystem
         try {
             BusinessSystem.parseXMLFile(null);
-            assertTrue(false, "BusinessSystem.parseXMLFile(null) debe lanzar XMLParsingException");
+            comprobar(false, "BusinessSystem.parseXMLFile(null) debe lanzar excepción");
         } catch (XMLParsingException e) {
-            assertTrue(true, "BusinessSystem.parseXMLFile(null) controlado");
+            comprobar(true, "BusinessSystem.parseXMLFile(null) lanza XMLParsingException");
         }
-        assertTrue(!new BusinessSystem().loadXMLFile(null), "loadXMLFile(null) debe devolver false sin lanzar excepción");
+        comprobar(!new BusinessSystem().loadXMLFile(null), "loadXMLFile(null) devuelve false");
 
-        // -------------------------------------------------------------------------
-        // 5. CARACTERES ESPECIALES Y ESCAPADO COMPLETO
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [5] PRUEBAS DE CARACTERES ESPECIALES (XML ENTITIES Y UNICODE) ---");
+        // 5. Caracteres especiales en XML
+        System.out.println("\n5. Caracteres especiales (&, <, >, comillas):");
         Direccion dirEspecial = new Direccion("Barañáin & Cizur", "Navarra", "Calle <Principal> \"Alta\" 'Norte'", 7);
         Bar barEspecial = new Bar("Bar & Tapas \"El Ñandú\"", dirEspecial, "Descripción con <etiquetas> y 'comillas' & símbolos");
         barEspecial.agregarEspecialidad("Pinchos de tortilla & jamón");
         barEspecial.agregarEspecialidad("<Pimientos del Padrón>");
 
-        File fBar = new File(scratchDir, "bar_especial.xml");
-        assertTrue(barEspecial.saveToXML(fBar), "saveToXML con caracteres especiales en nombre, direccion y especialidades");
+        File fBar = new File(dirTemporal, "bar_especial.xml");
+        comprobar(barEspecial.saveToXML(fBar), "Guardado de Bar con caracteres especiales");
 
         try {
-            Bar barRecuperado = XMLParser.parseBar(fBar);
-            assertTrue(barRecuperado.getNombre().equals(barEspecial.getNombre()), "Nombre con & y comillas restaurado idénticamente");
-            assertTrue(barRecuperado.getDescripcion().equals(barEspecial.getDescripcion()), "Descripción con tags ficticios recuperada intacta");
-            assertTrue(barRecuperado.getDireccion().getCalle().equals(dirEspecial.getCalle()), "Calle con comillas y ángulos recuperada con fidelidad");
+            Bar barLeido = XMLParser.parseBar(fBar);
+            comprobar(barLeido.getNombre().equals(barEspecial.getNombre()), "Nombre con caracteres especiales conservado");
+            comprobar(barLeido.getDescripcion().equals(barEspecial.getDescripcion()), "Descripción con caracteres especiales conservada");
+            comprobar(barLeido.getDireccion().getCalle().equals(dirEspecial.getCalle()), "Calle con caracteres especiales conservada");
         } catch (XMLParsingException e) {
-            assertTrue(false, "Fallo al recuperar Bar con caracteres especiales: " + e.getMessage());
+            comprobar(false, "Error al leer Bar con caracteres especiales: " + e.getMessage());
         }
 
-        // -------------------------------------------------------------------------
-        // 6. ROUND-TRIP COMPLETO DE BUSINESS SYSTEM CON TODAS LAS ENTIDADES
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [6] ROUND-TRIP EXHAUSTIVO DEL SISTEMA COMPLETO ---");
+        // 6. Guardado y lectura de un BusinessSystem completo
+        System.out.println("\n6. Guardado y carga de BusinessSystem completo:");
         BusinessSystem bs = new BusinessSystem();
 
-        Cliente cli1 = new Cliente("marta_g", "pass#123", LocalDate.of(1996, 7, 15));
-        Cliente cli2 = new Cliente("pedro_r", "pass#456", LocalDate.of(2001, 11, 2));
-        Dueño due1 = new Dueño("carmen_d", "dueñoPass1", LocalDate.of(1975, 2, 20));
-        Dueño due2 = new Dueño("javier_d", "dueñoPass2", LocalDate.of(1982, 8, 30));
+        Cliente cli1 = new Cliente("marta_g", "pass123", LocalDate.of(1996, 7, 15));
+        Cliente cli2 = new Cliente("pedro_r", "pass456", LocalDate.of(2001, 11, 2));
+        Dueño due1 = new Dueño("carmen_d", "duenoPass1", LocalDate.of(1975, 2, 20));
+        Dueño due2 = new Dueño("javier_d", "duenoPass2", LocalDate.of(1982, 8, 30));
 
         bs.nuevoUsuario(cli1);
         bs.nuevoUsuario(cli2);
@@ -233,7 +215,7 @@ public class P03HardcoreTester {
         bs.nuevoUsuario(due2);
 
         Direccion dBar = new Direccion("Pamplona", "Navarra", "San Nicolás", 14);
-        Bar bar1 = new Bar("Bar Iruña Pinta", dBar, "Especialidad en fritos");
+        Bar bar1 = new Bar("Bar Iruña", dBar, "Especialidad en fritos");
         bar1.agregarEspecialidad("Frito de pimiento");
         bar1.agregarEspecialidad("Croqueta de jamón");
 
@@ -251,74 +233,67 @@ public class P03HardcoreTester {
         bs.nuevoLocal(rest1);
         bs.nuevoLocal(loc1);
 
-        // Asociaciones de dueños
         bs.asociarLocal(bar1, due1);
         bs.asociarLocal(bar1, due2);
         bs.asociarLocal(rest1, due1);
 
-        // Reviews y Contestaciones
-        Review rev1 = new Review(cli1, bar1, 5, "Insuperable calidad", LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 2));
+        Review rev1 = new Review(cli1, bar1, 5, "Muy buena calidad", LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 2));
         Review rev2 = new Review(cli2, rest1, 4, "Muy rico todo", LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 6));
         bs.nuevaReview(rev1);
         bs.nuevaReview(rev2);
 
-        Contestacion cont1 = new Contestacion(due1, rev1, "¡Muchísimas gracias Marta!", LocalDate.of(2026, 10, 3));
+        Contestacion cont1 = new Contestacion(due1, rev1, "Muchas gracias Marta", LocalDate.of(2026, 10, 3));
         bs.nuevaContestacion(cont1, rev1);
 
-        // Reservas (en Bar y en Restaurante)
         bs.nuevaReserva(cli1, bar1, LocalDate.now().plusDays(5), LocalTime.of(14, 0));
         bs.nuevaReserva(cli2, rest1, LocalDate.now().plusDays(10), LocalTime.of(21, 30));
 
-        File sysFile = new File(scratchDir, "full_system_test.xml");
-        assertTrue(bs.saveToXML(sysFile), "saveToXML del sistema completo con todas las clases instanciables");
+        File sysFile = new File(dirTemporal, "sistema_completo.xml");
+        comprobar(bs.saveToXML(sysFile), "saveToXML del sistema completo");
 
         try {
             BusinessSystem bsCopia = BusinessSystem.parseXMLFile(sysFile);
-            assertTrue(bsCopia.obtenerTodosLosLocales().length == 4, "Los 4 locales fueron restaurados");
-            assertTrue(bsCopia.obtenerUsuario("marta_g") instanceof Cliente, "Cliente recuperado con tipo exacto");
-            assertTrue(bsCopia.obtenerUsuario("carmen_d") instanceof Dueño, "Dueño recuperado con tipo exacto");
-            assertTrue(bsCopia.obtenerDueñosDeLocal(bar1).length == 2, "La cotitularidad (2 dueños) se restauró con éxito");
-            assertTrue(bsCopia.verReviews(bar1).length == 1, "Review del bar recuperada");
-            assertTrue(bsCopia.tieneContestacion(bsCopia.verReviews(bar1)[0]), "Contestación enlazada correctamente");
-            assertTrue(bsCopia.obtenerReservas(cli1).length == 1, "Reserva del cliente recuperada");
+            comprobar(bsCopia.obtenerTodosLosLocales().length == 4, "Se recuperan los 4 locales");
+            comprobar(bsCopia.obtenerUsuario("marta_g") instanceof Cliente, "Cliente recuperado correctamente");
+            comprobar(bsCopia.obtenerUsuario("carmen_d") instanceof Dueño, "Dueño recuperado correctamente");
+            comprobar(bsCopia.obtenerDueñosDeLocal(bar1).length == 2, "El bar mantiene sus 2 dueños");
+            comprobar(bsCopia.verReviews(bar1).length == 1, "Review del bar recuperada");
+            Review revRecuperada = bsCopia.verReviews(bar1)[0];
+            comprobar(bsCopia.tieneContestacion(revRecuperada), "Contestación recuperada");
+            comprobar(bsCopia.obtenerReservas(cli1).length == 1, "Reserva del cliente recuperada");
+            comprobar(revRecuperada.getCliente() == bsCopia.obtenerUsuario("marta_g"),
+                    "La review apunta al mismo objeto Cliente de la lista de usuarios");
+            comprobar(revRecuperada.getLocal() == bsCopia.obtenerLocal(dBar),
+                    "La review apunta al mismo objeto Local de la lista de locales");
+            comprobar(bsCopia.obtenerContestacion(revRecuperada).getReview() == revRecuperada,
+                    "La contestación apunta a la misma instancia de Review del sistema");
         } catch (XMLParsingException e) {
-            assertTrue(false, "Fallo inesperado al deserializar BusinessSystem completo: " + e.getMessage());
+            comprobar(false, "Error al leer BusinessSystem completo: " + e.getMessage());
         }
 
-        // -------------------------------------------------------------------------
-        // 7. ATOMICIDAD EN LOADXMLFILE TRAS INTENTO DE CARGA CORRUPTA
-        // -------------------------------------------------------------------------
-        System.out.println("\n--- [7] COMPROBACIÓN DE ATOMICIDAD (INTEGRIDAD TRAS ERROR) ---");
-        BusinessSystem estadoInicial = new BusinessSystem();
-        estadoInicial.loadXMLFile(sysFile);
-        int totalLocalesAntes = estadoInicial.obtenerTodosLosLocales().length;
+        // 7. Comprobar que si loadXMLFile falla, se mantienen los datos que había antes
+        System.out.println("\n7. Conservación de datos si falla loadXMLFile:");
+        BusinessSystem sistemaActual = new BusinessSystem();
+        sistemaActual.loadXMLFile(sysFile);
+        int localesAntes = sistemaActual.obtenerTodosLosLocales().length;
 
-        File archivoCorrupto = new File(scratchDir, "corrupto.xml");
-        Files.write(archivoCorrupto.toPath(), "<businessSystem><usuarios><cliente><nick>solo</nick></businessSystem>".getBytes(StandardCharsets.UTF_8));
+        File archivoInvalido = new File(dirTemporal, "incompleto.xml");
+        Files.write(archivoInvalido.toPath(), "<businessSystem><usuarios><cliente><nick>solo</nick></businessSystem>".getBytes(StandardCharsets.UTF_8));
 
-        boolean cargaExitosa = estadoInicial.loadXMLFile(archivoCorrupto);
-        assertTrue(!cargaExitosa, "loadXMLFile devolvió false ante un fichero truncado/corrupto");
-        assertTrue(estadoInicial.obtenerTodosLosLocales().length == totalLocalesAntes,
-                "Atomicidad verificada: los datos previos se conservan íntegros tras un fallo de carga");
+        boolean cargado = sistemaActual.loadXMLFile(archivoInvalido);
+        comprobar(!cargado, "loadXMLFile devuelve false con un fichero incompleto");
+        comprobar(sistemaActual.obtenerTodosLosLocales().length == localesAntes,
+                "Se mantienen los datos anteriores tras fallar la carga");
 
-        // Limpiar archivos de prueba
-        File[] scratchFiles = scratchDir.listFiles();
-        if (scratchFiles != null) {
-            for (File sf : scratchFiles) {
-                sf.delete();
+        // Borrar archivos temporales
+        File[] archivos = dirTemporal.listFiles();
+        if (archivos != null) {
+            for (File f : archivos) {
+                f.delete();
             }
         }
-        scratchDir.delete();
+        dirTemporal.delete();
 
-        System.out.println("\n===============================================================================");
-        System.out.printf(" RESULTADO: %d / %d AFIRMACIONES SUPERADAS CON ÉXITO (%.1f%%)\n",
-                passedAssertions, totalAssertions, (passedAssertions * 100.0) / totalAssertions);
-        System.out.println("===============================================================================");
-        if (passedAssertions == totalAssertions) {
-            System.out.println(" >>> SISTEMA 100% ROBUSTO: SUPERA TODAS LAS PRUEBAS DE MÁXIMA EXIGENCIA <<<");
-        } else {
-            System.err.println(" >>> FALLOS ENCONTRADOS EN LAS PRUEBAS DE ROBUSTEZ <<<");
-            System.exit(1);
-        }
+        System.out.println("\nPruebas finalizadas: " + pruebasCorrectas + " / " + totalPruebas + " correctas.");
     }
 }

@@ -17,10 +17,9 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 
 /**
  * Clase ejecutable para el Ejercicio 5 de la Práctica 02.
- * Genera un sistema de negocio con bares, restaurantes y pubs de ejemplo,
- * y exporta la información completa a un archivo ODS con tres hojas (Bar, Restaurante, Pub),
- * a razón de una fila por cada local, gestionando atributos escalares y de cardinalidad múltiple
- * (dueños, especialidades y capacidades) alineado estrictamente con la estructura de la Figura 3.
+ * Crea un sistema de negocio con bares, restaurantes y pubs de ejemplo
+ * y exporta sus datos a un archivo ODS con tres hojas (Bar, Restaurante, Pub),
+ * escribiendo una fila por cada local.
  *
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
