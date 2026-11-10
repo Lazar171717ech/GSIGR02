@@ -147,11 +147,24 @@ public class Reserva implements XMLRepresentable {
         this.local = local;
     }
 
+    /**
+     * Calcula el código hash a partir de fecha, hora, descuento, cliente y
+     * local, los mismos atributos que usa {@link #equals(Object)}.
+     *
+     * @return El código hash del objeto.
+     */
     @Override
     public int hashCode() {
         return java.util.Objects.hash(fecha, hora, descuento, cliente, local);
     }
 
+    /**
+     * Compara esta reserva con otro objeto. Dos reservas son iguales si son de
+     * la misma clase y coinciden en fecha, hora, descuento, cliente y local.
+     *
+     * @param obj Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -179,6 +192,12 @@ public class Reserva implements XMLRepresentable {
         return Objects.equals(this.local, other.local);
     }
 
+    /**
+     * Devuelve una representación textual de la reserva con fecha, hora,
+     * descuento, cliente y local.
+     *
+     * @return Cadena descriptiva de la reserva.
+     */
     @Override
     public String toString() {
         return "Reserva{"  + "fecha=" + fecha + ", hora=" + hora + ", descuento=" + descuento + ", cliente=" + cliente + ", local=" + local + '}';

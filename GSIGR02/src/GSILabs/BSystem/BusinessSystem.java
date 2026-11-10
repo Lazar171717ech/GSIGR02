@@ -28,12 +28,13 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import GSILabs.persistence.XMLParsingException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+import GSILabs.persistence.XMLParser;
+import GSILabs.serializable.XMLRepresentable;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 /**
  * Clase principal que implementa la lógica de negocio del sistema LeisureOffice
@@ -44,7 +45,7 @@ import org.xml.sax.SAXException;
  * 
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class BusinessSystem implements LeisureOffice, LookupService {
+public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresentable {
 
     private final List<Usuario> usuarios = new ArrayList<>();
     private final List<Local> locales = new ArrayList<>();
@@ -1081,17 +1082,115 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         return new Dueño[0];
     }
     
+        /**
+     * Genera la representación XML completa del sistema. El documento tiene una
+     * sección por colección: usuarios, locales, propietarios, reviews, reservas
+     * y contestaciones. Los locales aparecen una sola vez en {@code <locales>} y
+     * la titularidad se referencia por dirección del local y nick del dueño,
+     * evitando duplicar objetos.
+     *
+     * @return Cadena con el XML del sistema.
+     */
+    @Override
+    public String toXML() {
+        StringBuilder sb = new StringBuilder("<businessSystem>\n");
+
+        sb.append("    <usuarios>\n");
+        for (Usuario u : usuarios) {
+            sb.append(indentar(u.toXML(), 8));
+        }
+        sb.append("    </usuarios>\n");
+
+        sb.append("    <locales>\n");
+        for (Local l : locales) {
+            sb.append(indentar(l.toXML(), 8));
+        }
+        sb.append("    </locales>\n");
+
+        sb.append("    <propietarios>\n");
+        for (Map.Entry<Local, Set<Dueño>> e : propietariosDeLocal.entrySet()) {
+            for (Dueño d : e.getValue()) {
+                sb.append("        <propiedad>\n");
+                sb.append(indentar(e.getKey().getDireccion().toXML(), 12));
+                sb.append("            <nick>").append(escapeXML(d.getNick())).append("</nick>\n");
+                sb.append("        </propiedad>\n");
+            }
+        }
+        sb.append("    </propietarios>\n");
+
+        sb.append("    <reviews>\n");
+        for (Review r : reviews) {
+            sb.append(indentar(r.toXML(), 8));
+        }
+        sb.append("    </reviews>\n");
+
+        sb.append("    <reservas>\n");
+        for (Reserva r : reservas) {
+            sb.append(indentar(r.toXML(), 8));
+        }
+        sb.append("    </reservas>\n");
+
+        sb.append("    <contestaciones>\n");
+        for (Contestacion c : contestaciones.values()) {
+            sb.append(indentar(c.toXML(), 8));
+        }
+        sb.append("    </contestaciones>\n");
+
+        return sb.append("</businessSystem>").toString();
+    }
+
+    /**
+     * Guarda la representación XML del sistema en un fichero (UTF-8).
+     *
+     * @param f Fichero de destino; se crean las carpetas intermedias si no existen.
+     * @return true si se guardó correctamente; false en caso contrario.
+     */
+    @Override
+    public boolean saveToXML(File f) {
+        if (f == null) {
+            return false;
+        }
+        try {
+            File parent = f.getAbsoluteFile().getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + toXML();
+            Files.write(f.toPath(), xml.getBytes(StandardCharsets.UTF_8));
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Guarda la representación XML del sistema en la ruta indicada.
+     *
+     * @param filePath Ruta del fichero de destino.
+     * @return true si se guardó correctamente; false en caso contrario.
+     */
+    @Override
+    public boolean saveToXML(String filePath) {
+        return filePath != null && !filePath.trim().isEmpty()
+                && saveToXML(new File(filePath.trim()));
+    }
+
     /**
      * Parsea un fichero XML que contiene la representación estructurada del sistema
      * y devuelve una nueva instancia de BusinessSystem con los datos cargados.
-     * 
+     * <p>
+     * Las secciones se procesan siempre en orden de dependencias (usuarios, locales,
+     * propietarios, reviews, reservas, contestaciones), con independencia del orden
+     * en que aparezcan en el fichero, y cada objeto se valida con las políticas del
+     * sistema (edad mínima, nick único, dirección única, máximo de dueños, etc.).
+     *
      * @param f El objeto {@link File} que apunta al documento XML a analizar.
      * @return Una nueva instancia de {@link BusinessSystem} poblada con los datos del XML.
-     * @throws XMLParsingException Si el fichero es nulo, no existe, está mal formado, 
+     * @throws XMLParsingException Si el fichero es nulo, no existe, está mal formado,
      *                             contiene anomalías estructurales o infringe las políticas de negocio.
      */
     public static BusinessSystem parseXMLFile(File f) throws XMLParsingException {
-        if (f == null || !f.exists()) {
+        if (f == null || !f.isFile()) {
             throw new XMLParsingException("El fichero XML proporcionado es nulo o no existe en el disco.");
         }
 
@@ -1102,18 +1201,104 @@ public class BusinessSystem implements LeisureOffice, LookupService {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(f);
-            
+
             // Normalizar el árbol XML para evitar nodos de texto vacíos o fragmentados
             doc.getDocumentElement().normalize();
-
-            // Ejemplo de lectura de elementos raíz o entidades del sistema
             Element root = doc.getDocumentElement();
-            
-            // TODO: Añadir aquí la lógica de recorrido de nodos (getTagירות, hijos, etc.)
-            // para instanciar bares, usuarios, reviews y añadirlos a 'system'.
-            // Si algún campo obligatorio falta o es incorrecto, lanzar la excepción:
-            // throw new XMLParsingException("Error de validación: Estructura XML incompleta o inválida.");
 
+            if (!"businessSystem".equals(root.getTagName())) {
+                throw new XMLParsingException("La raíz del documento debe ser <businessSystem>.");
+            }
+
+            // 1. Usuarios (clientes y dueños)
+            for (Element e : hijosDeSeccion(root, "usuarios")) {
+                String xml = XMLParser.nodeToString(e);
+                Usuario u;
+                switch (e.getTagName()) {
+                    case "cliente":
+                        u = XMLParser.parseCliente(xml);
+                        break;
+                    case "dueño":
+                        u = XMLParser.parseDueño(xml);
+                        break;
+                    default:
+                        throw new XMLParsingException("Usuario desconocido: <" + e.getTagName() + ">.");
+                }
+                if (!system.nuevoUsuario(u)) {
+                    throw new XMLParsingException("Usuario inválido o duplicado: " + u.getNick());
+                }
+            }
+
+            // 2. Locales (el tipo concreto lo indica la etiqueta)
+            for (Element e : hijosDeSeccion(root, "locales")) {
+                String xml = XMLParser.nodeToString(e);
+                Local l;
+                switch (e.getTagName()) {
+                    case "bar":
+                        l = XMLParser.parseBar(xml);
+                        break;
+                    case "pub":
+                        l = XMLParser.parsePub(xml);
+                        break;
+                    case "restaurante":
+                        l = XMLParser.parseRestaurante(xml);
+                        break;
+                    case "local":
+                        l = XMLParser.parseLocal(xml);
+                        break;
+                    default:
+                        throw new XMLParsingException("Local desconocido: <" + e.getTagName() + ">.");
+                }
+                if (!system.nuevoLocal(l)) {
+                    throw new XMLParsingException("Local duplicado en la misma dirección: " + l.getNombre());
+                }
+            }
+
+            // 3. Titularidad de locales (dirección del local + nick del dueño)
+            for (Element e : hijosDeSeccion(root, "propietarios")) {
+                Element dirEl = XMLParser.getFirstChildElement("direccion", e);
+                if (dirEl == null) {
+                    throw new XMLParsingException("Elemento <propiedad> sin <direccion>.");
+                }
+                Local l = system.obtenerLocal(XMLParser.parseDireccion(XMLParser.nodeToString(dirEl)));
+                Usuario u = system.obtenerUsuario(XMLParser.getTagValue("nick", e));
+                if (l == null || !(u instanceof Dueño) || !system.asociarLocal(l, (Dueño) u)) {
+                    throw new XMLParsingException(
+                            "Propiedad inconsistente: local o dueño inexistente, o más de 3 dueños por local.");
+                }
+            }
+
+            // 4. Reviews (cliente y local deben existir ya en el sistema)
+            for (Element e : hijosDeSeccion(root, "reviews")) {
+                Review r = XMLParser.parseReview(XMLParser.nodeToString(e));
+                if (!system.nuevaReview(r)) {
+                    throw new XMLParsingException("Review inválida o duplicada.");
+                }
+            }
+
+            // 5. Reservas. Se añaden directamente a la lista y no con nuevaReserva(),
+            //    porque ese método rechaza fechas pasadas y fija el descuento a 0,
+            //    lo que haría perder información al cargar.
+            for (Element e : hijosDeSeccion(root, "reservas")) {
+                Reserva r = XMLParser.parseReserva(XMLParser.nodeToString(e));
+                if (!system.usuarios.contains(r.getCliente()) || !system.locales.contains(r.getLocal())) {
+                    throw new XMLParsingException("Reserva con cliente o local inexistente.");
+                }
+                system.reservas.add(r);
+            }
+
+            // 6. Contestaciones (se enlazan con la review ya registrada en el sistema)
+            for (Element e : hijosDeSeccion(root, "contestaciones")) {
+                Contestacion c = XMLParser.parseContestacion(XMLParser.nodeToString(e));
+                int i = system.reviews.indexOf(c.getReview());
+                if (i < 0 || !system.nuevaContestacion(c, system.reviews.get(i))) {
+                    throw new XMLParsingException("Contestación inválida o sin review asociada.");
+                }
+            }
+
+        } catch (XMLParsingException e) {
+            // Se relanza tal cual para no perder el mensaje de validación concreto
+            throw e;
         } catch (org.xml.sax.SAXException e) {
             throw new XMLParsingException("Error de sintaxis o malformación en el documento XML.", e);
         } catch (javax.xml.parsers.ParserConfigurationException e) {
@@ -1128,9 +1313,12 @@ public class BusinessSystem implements LeisureOffice, LookupService {
     }
 
     /**
-     * Lee un fichero XML y carga su contenido de manera acumulativa o sustitutiva 
-     * en la instancia actual de {@link BusinessSystem}.
-     * 
+     * Lee un fichero XML y sustituye el contenido de esta instancia de
+     * {@link BusinessSystem} por el que contiene el fichero. La operación es
+     * atómica: el fichero se parsea primero a un sistema temporal y, solo si es
+     * totalmente válido, se reemplazan los datos actuales. Si falla, el sistema
+     * conserva su contenido anterior.
+     *
      * @param f El objeto {@link File} que contiene la información en formato XML a cargar.
      * @return true si la importación y carga se han completado con éxito; false en caso contrario.
      */
@@ -1138,19 +1326,76 @@ public class BusinessSystem implements LeisureOffice, LookupService {
         try {
             // Reutilizamos el método estático de parseo para validar y construir el sistema temporal
             BusinessSystem parsedSystem = parseXMLFile(f);
-            
-            if (parsedSystem != null) {
-                // TODO: Volcar, fusionar o reemplazar los datos del sistema analizado 
-                // en la instancia actual ('this'). 
-                // Ejemplo: this.bares.addAll(parsedSystem.getBares());
-                return true;
-            }
-            return false;
-            
+
+            // Sustitución del contenido actual por el del sistema parseado
+            usuarios.clear();
+            usuarios.addAll(parsedSystem.usuarios);
+            locales.clear();
+            locales.addAll(parsedSystem.locales);
+            propietariosDeLocal.clear();
+            propietariosDeLocal.putAll(parsedSystem.propietariosDeLocal);
+            reviews.clear();
+            reviews.addAll(parsedSystem.reviews);
+            reservas.clear();
+            reservas.addAll(parsedSystem.reservas);
+            contestaciones.clear();
+            contestaciones.putAll(parsedSystem.contestaciones);
+            return true;
+
         } catch (XMLParsingException e) {
             // Captura controlada de la excepción de parseo exigida por la política de robustez
             System.err.println("[XML_LOAD_ERROR] No se pudo cargar el fichero XML: " + e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Devuelve los elementos hijo de una sección del documento (p. ej. todos los
+     * {@code <cliente>} y {@code <dueño>} dentro de {@code <usuarios>}).
+     *
+     * @param root    Elemento raíz del documento.
+     * @param seccion Nombre de la sección a leer.
+     * @return Lista con los elementos hijo de la sección.
+     * @throws XMLParsingException Si la sección no existe.
+     */
+    private static List<Element> hijosDeSeccion(Element root, String seccion) throws XMLParsingException {
+        Element sec = XMLParser.getFirstChildElement(seccion, root);
+        if (sec == null) {
+            throw new XMLParsingException("Falta la sección <" + seccion + "> en el documento.");
+        }
+        List<Element> resultado = new ArrayList<>();
+        NodeList hijos = sec.getChildNodes();
+        for (int i = 0; i < hijos.getLength(); i++) {
+            if (hijos.item(i) instanceof Element) {
+                resultado.add((Element) hijos.item(i));
+            }
+        }
+        return resultado;
+    }
+
+    /**
+     * Indenta cada línea de un fragmento XML para que el documento sea legible.
+     *
+     * @param xml      Fragmento XML.
+     * @param espacios Número de espacios de indentación.
+     * @return El fragmento indentado y terminado en salto de línea.
+     */
+    private static String indentar(String xml, int espacios) {
+        String pad = String.format("%" + espacios + "s", "");
+        return pad + xml.replace("\n", "\n" + pad) + "\n";
+    }
+
+    /**
+     * Escapa los caracteres especiales de XML en un texto.
+     *
+     * @param s Texto original.
+     * @return Texto seguro para incluir dentro de una etiqueta XML.
+     */
+    private static String escapeXML(String s) {
+        if (s == null) {
+            return "";
+        }
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
     }
 }

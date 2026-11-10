@@ -99,6 +99,12 @@ public abstract class Usuario implements XMLRepresentable {
         this.fechaNacimiento = fechaNacimiento;
     }
 
+    /**
+     * Devuelve una representación textual del usuario con su nick y su fecha
+     * de nacimiento. La contraseña no se incluye.
+     *
+     * @return Cadena descriptiva del usuario.
+     */
     @Override
     public String toString() {
         return "Usuario{" +
@@ -106,7 +112,14 @@ public abstract class Usuario implements XMLRepresentable {
                 ", fechaNacimiento=" + fechaNacimiento +
                 '}';
     }
-    
+
+    /**
+     * Compara este usuario con otro objeto. Dos usuarios son iguales si son de
+     * la misma clase (Cliente o Dueño) y tienen el mismo nick.
+     *
+     * @param obj Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -119,6 +132,12 @@ public abstract class Usuario implements XMLRepresentable {
         return Objects.equals(this.nick, other.nick);
     }
 
+    /**
+     * Calcula el código hash a partir del nick, el mismo atributo que usa
+     * {@link #equals(Object)}.
+     *
+     * @return El código hash del objeto.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(nick);
@@ -173,6 +192,13 @@ public abstract class Usuario implements XMLRepresentable {
         return saveToXML(new File(filePath.trim()));
     }
 
+    /**
+     * Escapa los caracteres especiales de XML (&amp;, &lt;, &gt;, comillas y
+     * apóstrofo) de un texto para poder incluirlo dentro de una etiqueta.
+     *
+     * @param input Texto original; si es null se devuelve cadena vacía.
+     * @return Texto con los caracteres especiales sustituidos por sus entidades XML.
+     */
     protected static String escapeXML(String input) {
         if (input == null) {
             return "";

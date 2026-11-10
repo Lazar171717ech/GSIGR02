@@ -22,6 +22,12 @@ public class Dueño extends Usuario implements XMLRepresentable {
         super(nick, password, fechaNacimiento);
     }
 
+    /**
+     * Devuelve una representación textual del dueño con su nick y su fecha de
+     * nacimiento. La contraseña no se incluye.
+     *
+     * @return Cadena descriptiva del dueño.
+     */
     @Override
     public String toString() {
         return "Dueño{" +

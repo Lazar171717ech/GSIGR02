@@ -22,6 +22,12 @@ public class Cliente extends Usuario implements XMLRepresentable {
         super(nick, password, fechaNacimiento);
     }
 
+    /**
+     * Devuelve una representación textual del cliente con su nick y su fecha
+     * de nacimiento. La contraseña no se incluye.
+     *
+     * @return Cadena descriptiva del cliente.
+     */
     @Override
     public String toString() {
         return "Cliente{" +

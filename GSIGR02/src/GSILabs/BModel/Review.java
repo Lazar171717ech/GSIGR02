@@ -174,6 +174,14 @@ public class Review implements XMLRepresentable {
         this.fechaGeneracion = fechaGeneracion;
     }
 
+    /**
+     * Compara esta review con otro objeto. Dos reviews son iguales si son de la
+     * misma clase y coinciden en el nick del cliente, el local y la fecha de
+     * visita.
+     *
+     * @param o Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -193,11 +201,23 @@ public class Review implements XMLRepresentable {
                 && Objects.equals(this.fechaVisita, review.fechaVisita);
     }
 
+    /**
+     * Calcula el código hash a partir del nick del cliente, el local y la fecha
+     * de visita, los mismos atributos que usa {@link #equals(Object)}.
+     *
+     * @return El código hash del objeto.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(cliente != null ? cliente.getNick() : null, local, fechaVisita);
     }
 
+    /**
+     * Devuelve una representación textual de la review con el nick del cliente,
+     * el local, la valoración y la fecha de visita.
+     *
+     * @return Cadena descriptiva de la review.
+     */
     @Override
     public String toString() {
         return "Review{"

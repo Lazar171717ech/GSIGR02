@@ -48,21 +48,35 @@ public class Bar extends Local implements Reservable, XMLRepresentable {
         return especialidades;
     }
 
+    /**
+     * Devuelve una representación textual del objeto.
+     *
+     * @return Cadena descriptiva con los datos principales del objeto.
+     */
     @Override
     public String toString() {
         return "Bar{" + super.toString() + ", especialidades=" + especialidades + '}';
     }
 
     /**
-     * Dos bares son iguales si tienen el mismo nombre y la misma dirección
-     * (criterio heredado de Local). Las especialidades son atributos secundarios
-     * que no forman parte de la identidad del local.
+     * Calcula el código hash del bar a partir de los atributos que usa
+     * {@link #equals(Object)} (nombre y dirección, heredados de Local).
+     *
+     * @return El código hash del objeto.
      */
     @Override
     public int hashCode() {
         return super.hashCode();
     }
 
+    /**
+     * Compara este bar con otro objeto. Dos bares son iguales si son de la
+     * misma clase y coinciden en nombre y dirección; las especialidades no
+     * intervienen en la comparación.
+     *
+     * @param obj Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

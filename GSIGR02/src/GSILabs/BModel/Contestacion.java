@@ -124,6 +124,14 @@ public class Contestacion implements XMLRepresentable {
         this.fechaGeneracion = fechaGeneracion;
     }
 
+    /**
+     * Compara esta contestación con otro objeto. Dos contestaciones son iguales
+     * si son de la misma clase y coinciden en el nick del dueño y en la review
+     * contestada.
+     *
+     * @param o Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -142,12 +150,24 @@ public class Contestacion implements XMLRepresentable {
                 && Objects.equals(this.review, that.review);
     }
 
+    /**
+     * Calcula el código hash a partir del nick del dueño y de la review, los
+     * mismos atributos que usa {@link #equals(Object)}.
+     *
+     * @return El código hash del objeto.
+     */
     @Override
     public int hashCode() {
         // Usamos el nick del dueño y la review para el hash
         return Objects.hash(dueño != null ? dueño.getNick() : null, review);
     }
 
+    /**
+     * Devuelve una representación textual de la contestación con el nick del
+     * dueño, la review contestada y la fecha de generación.
+     *
+     * @return Cadena descriptiva de la contestación.
+     */
     @Override
     public String toString() {
         return "Contestacion{"

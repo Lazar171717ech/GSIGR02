@@ -129,6 +129,14 @@ public class Direccion implements XMLRepresentable {
         this.numero = numero;
     }
 
+    /**
+     * Compara esta dirección con otro objeto. Dos direcciones son iguales si
+     * tienen el mismo número y coinciden en localidad, provincia y calle sin
+     * distinguir entre mayúsculas y minúsculas.
+     *
+     * @param o Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object o){
         if (this == o){
@@ -144,6 +152,12 @@ public class Direccion implements XMLRepresentable {
             && calle.equalsIgnoreCase(that.calle);
     }
     
+    /**
+     * Calcula el código hash a partir de localidad, provincia y calle en
+     * minúsculas y del número, de forma coherente con {@link #equals(Object)}.
+     *
+     * @return El código hash del objeto.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(
@@ -154,6 +168,12 @@ public class Direccion implements XMLRepresentable {
         );
     }
     
+    /**
+     * Devuelve una representación textual de la dirección con localidad,
+     * provincia, calle y número.
+     *
+     * @return Cadena descriptiva de la dirección.
+     */
     @Override
     public String toString() {
         return "Direccion{"

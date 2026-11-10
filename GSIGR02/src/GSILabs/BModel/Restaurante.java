@@ -110,15 +110,24 @@ public class Restaurante extends Local implements Reservable, XMLRepresentable {
     }
 
     /**
-     * Dos restaurantes son iguales si tienen el mismo nombre y la misma dirección
-     * (criterio heredado de Local). El precio y las capacidades son atributos
-     * operacionales que no forman parte de la identidad del local.
+     * Calcula el código hash del restaurante a partir de los atributos que usa
+     * {@link #equals(Object)} (nombre y dirección, heredados de Local).
+     *
+     * @return El código hash del objeto.
      */
     @Override
     public int hashCode() {
         return super.hashCode();
     }
 
+    /**
+     * Compara este restaurante con otro objeto. Dos restaurantes son iguales si
+     * son de la misma clase y coinciden en nombre y dirección; el precio y las
+     * capacidades no intervienen en la comparación.
+     *
+     * @param obj Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -130,6 +139,12 @@ public class Restaurante extends Local implements Reservable, XMLRepresentable {
         return super.equals(obj);
     }
 
+    /**
+     * Devuelve una representación textual del restaurante: los datos de Local
+     * más el precio estimado y las capacidades máximas.
+     *
+     * @return Cadena descriptiva del restaurante.
+     */
     @Override
     public String toString() {
         return "Restaurante{" + super.toString() + ", precioEstimado=" + precioEstimado + ", capacidadMaximaTotal=" + capacidadMaximaTotal + ", capacidadMaximaMesa=" + capacidadMaximaMesa + '}';

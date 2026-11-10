@@ -78,11 +78,24 @@ public class Local implements XMLRepresentable {
         this.descripcion = descripcion;
     }
     
+    /**
+     * Calcula el código hash a partir del nombre y la dirección, los mismos
+     * atributos que usa {@link #equals(Object)}.
+     *
+     * @return El código hash del objeto.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(nombre, direccion);
     }
 
+    /**
+     * Compara este local con otro objeto. Dos locales son iguales si son de la
+     * misma clase y coinciden en nombre y dirección.
+     *
+     * @param obj Objeto con el que comparar.
+     * @return true si ambos objetos son iguales; false en caso contrario.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -95,6 +108,12 @@ public class Local implements XMLRepresentable {
         return Objects.equals(this.nombre, other.nombre) && Objects.equals(this.direccion, other.direccion);
     }
     
+    /**
+     * Devuelve una representación textual del local con su nombre, dirección y
+     * descripción.
+     *
+     * @return Cadena descriptiva del local.
+     */
     @Override
     public String toString(){
         return "Local{"
@@ -164,6 +183,13 @@ public class Local implements XMLRepresentable {
         return saveToXML(new File(filePath.trim()));
     }
 
+    /**
+     * Escapa los caracteres especiales de XML (&amp;, &lt;, &gt;, comillas y
+     * apóstrofo) de un texto para poder incluirlo dentro de una etiqueta.
+     *
+     * @param input Texto original; si es null se devuelve cadena vacía.
+     * @return Texto con los caracteres especiales sustituidos por sus entidades XML.
+     */
     protected static String escapeXML(String input) {
         if (input == null) {
             return "";
