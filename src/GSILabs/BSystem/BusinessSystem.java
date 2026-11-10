@@ -26,6 +26,7 @@ import java.util.Set;
 import org.jopendocument.dom.spreadsheet.Sheet;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import GSILabs.persistence.XMLParsingException;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
@@ -1158,7 +1159,7 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
             String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + toXML();
             Files.write(f.toPath(), xml.getBytes(StandardCharsets.UTF_8));
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             return false;
         }
     }
@@ -1171,8 +1172,14 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
      */
     @Override
     public boolean saveToXML(String filePath) {
-        return filePath != null && !filePath.trim().isEmpty()
-                && saveToXML(new File(filePath.trim()));
+        if (filePath == null || filePath.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            return saveToXML(new File(filePath.trim()));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -1197,8 +1204,17 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
         BusinessSystem system = new BusinessSystem();
 
         try {
-            // Inicialización del parser DOM estándar de Java
+            // Inicialización del parser DOM estándar de Java con protección contra XXE y Billion Laughs
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            try {
+                dbFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                dbFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            } catch (Throwable ignored) {
+            }
+            dbFactory.setXIncludeAware(false);
+            dbFactory.setExpandEntityReferences(false);
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(f);
 
@@ -1323,6 +1339,9 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
      * @return true si la importación y carga se han completado con éxito; false en caso contrario.
      */
     public boolean loadXMLFile(File f) {
+        if (f == null) {
+            return false;
+        }
         try {
             // Reutilizamos el método estático de parseo para validar y construir el sistema temporal
             BusinessSystem parsedSystem = parseXMLFile(f);
@@ -1345,6 +1364,9 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
         } catch (XMLParsingException e) {
             // Captura controlada de la excepción de parseo exigida por la política de robustez
             System.err.println("[XML_LOAD_ERROR] No se pudo cargar el fichero XML: " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            System.err.println("[XML_LOAD_ERROR] Error inesperado cargando XML: " + e.getMessage());
             return false;
         }
     }

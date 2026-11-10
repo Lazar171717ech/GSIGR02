@@ -1,9 +1,6 @@
 nbproject/private/
 build/
 dist/
-/GSIGR02/nbproject/private/
-/GSIGR02/build/
-/GSIGR02/dist/
 *.class
 *.pdf
 !*Gr*.pdf
