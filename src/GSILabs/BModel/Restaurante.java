@@ -7,7 +7,8 @@ import GSILabs.serializable.XMLRepresentable;
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Restaurante extends Local implements Reservable, XMLRepresentable {
-    
+
+    private static final long serialVersionUID = 1L;
     private float precioEstimado;
     private int capacidadMaximaTotal;
     private int capacidadMaximaMesa;

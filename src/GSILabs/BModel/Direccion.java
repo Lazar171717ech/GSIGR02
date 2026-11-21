@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -13,7 +14,9 @@ import java.util.Objects;
  * Representación de la clase dirección.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Direccion implements XMLRepresentable {
+public class Direccion implements XMLRepresentable, Serializable {
+
+    private static final long serialVersionUID = 1L;
     
     private String localidad;
     private String provincia;

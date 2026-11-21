@@ -9,7 +9,8 @@ import java.util.List;
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Bar extends Local implements Reservable, XMLRepresentable {
-    
+
+   private static final long serialVersionUID = 1L;
    private List<String> especialidades;
    
     /**

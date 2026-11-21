@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,7 +16,9 @@ import java.util.Objects;
  * Representa una Reserva realizada por un Cliente en un Local reservable.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Reserva implements XMLRepresentable {
+public class Reserva implements XMLRepresentable, Serializable {
+
+    private static final long serialVersionUID = 1L;
     private LocalDate fecha;
     private LocalTime hora;
     private float descuento;

@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.Period;
@@ -15,10 +16,11 @@ import java.util.Objects;
  * Clase abstracta Usuario, esto se debe a que no puede existir un Usuario, sino que un Cliente o un Dueño.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public abstract class Usuario implements XMLRepresentable {
-    
+public abstract class Usuario implements XMLRepresentable, Serializable {
+
+    private static final long serialVersionUID = 1L;
     private String nick;
-    private String password;
+    private transient String password;
     private LocalDate fechaNacimiento;
 
     /**

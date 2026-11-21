@@ -10,6 +10,8 @@ import java.time.LocalDate;
  */
 public class Dueño extends Usuario implements XMLRepresentable {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Constructor de Dueño.
      * @param nick El nick del usuario (debe tener al menos 3 caracteres).

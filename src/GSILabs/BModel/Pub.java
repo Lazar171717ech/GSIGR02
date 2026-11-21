@@ -8,7 +8,8 @@ import java.time.LocalTime;
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
 public class Pub extends Local implements XMLRepresentable {
-    
+
+    private static final long serialVersionUID = 1L;
     private LocalTime horaApertura;
     private LocalTime horaClausura;
     

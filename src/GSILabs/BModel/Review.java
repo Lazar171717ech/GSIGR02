@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -15,8 +16,9 @@ import java.util.Objects;
  * un Local.
  * @author Joel Vilchez, Urko Inés, Aimar Ijurko, Iker Fernandez, Pablo Lázaro, Pablo Mosquera, Juan Garbayo
  */
-public class Review implements XMLRepresentable {
+public class Review implements XMLRepresentable, Serializable {
 
+    private static final long serialVersionUID = 1L;
     private Cliente cliente;
     private Local local;
     private int valoracion;
