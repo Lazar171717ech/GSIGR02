@@ -5,11 +5,16 @@ import GSILabs.BModel.Cliente;
 import GSILabs.BModel.Contestacion;
 import GSILabs.BModel.Direccion;
 import GSILabs.BModel.Dueño;
+import GSILabs.BModel.Local;
 import GSILabs.BModel.Pub;
 import GSILabs.BModel.Restaurante;
 import GSILabs.BModel.Review;
 import GSILabs.BSystem.BusinessSystem;
 import GSILabs.BSystem.PublicBusinessSystem;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -18,6 +23,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Enumeration;
 
 /**
  * Servidor RMI principal del sistema de información. Crea e inicializa
@@ -42,10 +48,13 @@ public class BusinessServer {
     /** Identificador en el registro RMI para administradores. */
     public static final String ADMIN_GATEWAY_TAG = "AdminGateway";
 
-    // Referencias fuertes estáticas para impedir que el recolector de basura desexporte el stub o el registro
+    // Referencias fuertes estáticas para impedir que el recolector de basura desexporte los stubs o el registro
     private static PublicBusinessSystem sistemaPublico;
+    private static ClientGatewayView vistaCliente;
+    private static AdminGatewayView vistaAdmin;
     private static Registry registro;
-    private static Remote stub;
+    private static Remote stubCliente;
+    private static Remote stubAdmin;
 
     /**
      * Constructor por defecto.
@@ -230,35 +239,37 @@ public class BusinessServer {
         }
 
         if (args.length >= 2 && args[1] != null && !args[1].trim().isEmpty()) {
+            System.setProperty("java.rmi.server.hostname", args[1].trim());
+        } else {
+            // Detección automática de la IP de red local (LAN/Wi-Fi) para evitar 127.0.1.1 en Linux
             String hostActual = System.getProperty("java.rmi.server.hostname");
             if (hostActual == null || hostActual.trim().isEmpty()) {
-                System.setProperty("java.rmi.server.hostname", args[1].trim());
+                String ipDetectada = detectarIpLocal();
+                if (ipDetectada != null) {
+                    System.setProperty("java.rmi.server.hostname", ipDetectada);
+                }
             }
         }
 
         try {
-            // 1. Crear instancia del objeto a publicar
+            // 1. Crear instancia única de negocio y sus vistas restringidas por interfaz
             BusinessSystem bs = crearSistemaPoblado();
             sistemaPublico = new PublicBusinessSystem(bs);
+            vistaCliente = new ClientGatewayView(sistemaPublico);
+            vistaAdmin = new AdminGatewayView(sistemaPublico);
 
-            // 2. Generar stub del objeto usando UnicastRemoteObject.exportObject
-            stub = UnicastRemoteObject.exportObject(sistemaPublico, 0);
+            // 2. Generar stubs separados por interfaz usando UnicastRemoteObject.exportObject
+            stubCliente = UnicastRemoteObject.exportObject(vistaCliente, 0);
+            stubAdmin = UnicastRemoteObject.exportObject(vistaAdmin, 0);
 
             // 3. Crear registro RMI en el puerto indicado (1099 por defecto)
             registro = LocateRegistry.createRegistry(puerto);
 
-            // 4. Asociar el stub en el registro bajo ambos identificadores
-            registro.rebind(CLIENT_GATEWAY_TAG, stub);
-            registro.rebind(ADMIN_GATEWAY_TAG, stub);
+            // 4. Asociar cada stub en el registro bajo su identificador correspondiente
+            registro.rebind(CLIENT_GATEWAY_TAG, stubCliente);
+            registro.rebind(ADMIN_GATEWAY_TAG, stubAdmin);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    if (sistemaPublico != null) {
-                        UnicastRemoteObject.unexportObject(sistemaPublico, true);
-                    }
-                } catch (NoSuchObjectException ignored) {
-                }
-            }));
+            Runtime.getRuntime().addShutdownHook(new Thread(BusinessServer::desexportarVistas));
 
             String rmiHostname = System.getProperty("java.rmi.server.hostname");
             System.out.println("=== SERVIDOR RMI GSIGR02 INICIADO ===");
@@ -275,13 +286,167 @@ public class BusinessServer {
         } catch (RemoteException e) {
             System.err.println("No se pudo iniciar el servidor RMI en el puerto " + puerto + ": " + e.getMessage());
             System.err.println("Comprueba si el puerto ya está ocupado o prueba con un puerto alternativo (p. ej. 1100).");
-            try {
-                if (sistemaPublico != null) {
-                    UnicastRemoteObject.unexportObject(sistemaPublico, true);
-                }
-            } catch (NoSuchObjectException ignored) {
-            }
+            desexportarVistas();
             System.exit(1);
         }
+    }
+
+    /**
+     * Desexporta de forma segura las vistas remotas registradas en el servidor.
+     */
+    private static void desexportarVistas() {
+        for (Remote vista : new Remote[]{vistaCliente, vistaAdmin}) {
+            if (vista != null) {
+                try {
+                    UnicastRemoteObject.unexportObject(vista, true);
+                } catch (NoSuchObjectException ignored) {
+                }
+            }
+        }
+    }
+
+    /**
+     * Vista remota restringida únicamente a {@link ClientGateway} (y {@link LocalFinder}).
+     * Evita que el stub publicado bajo {@code ClientGateway} exponga métodos de {@link AdminGateway}.
+     */
+    private static final class ClientGatewayView implements ClientGateway {
+
+        private final ClientGateway delegate;
+
+        private ClientGatewayView(ClientGateway delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Local getLocal(String name) throws RemoteException {
+            return delegate.getLocal(name);
+        }
+
+        @Override
+        public Local[] getLocals(String name) throws RemoteException {
+            return delegate.getLocals(name);
+        }
+
+        @Override
+        public boolean insertaReview(Review r) throws RemoteException {
+            return delegate.insertaReview(r);
+        }
+
+        @Override
+        public boolean quitaReview(Review r) throws RemoteException {
+            return delegate.quitaReview(r);
+        }
+
+        @Override
+        public Bar mejorBar(String ciudad) throws RemoteException {
+            return delegate.mejorBar(ciudad);
+        }
+
+        @Override
+        public Restaurante[] mejoresRestaurantes(String ciudad, Integer num) throws RemoteException {
+            return delegate.mejoresRestaurantes(ciudad, num);
+        }
+    }
+
+    /**
+     * Vista remota restringida únicamente a {@link AdminGateway} (y {@link LocalFinder}).
+     * Evita que el stub publicado bajo {@code AdminGateway} exponga métodos de {@link ClientGateway}.
+     */
+    private static final class AdminGatewayView implements AdminGateway {
+
+        private final AdminGateway delegate;
+
+        private AdminGatewayView(AdminGateway delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Local getLocal(String name) throws RemoteException {
+            return delegate.getLocal(name);
+        }
+
+        @Override
+        public Local[] getLocals(String name) throws RemoteException {
+            return delegate.getLocals(name);
+        }
+
+        @Override
+        public Boolean eliminaLocal(Local l) throws RemoteException {
+            return delegate.eliminaLocal(l);
+        }
+
+        @Override
+        public Boolean eliminaReviewsDeLocal(Local l) throws RemoteException {
+            return delegate.eliminaReviewsDeLocal(l);
+        }
+
+        @Override
+        public Boolean eliminaReview(Review r) throws RemoteException {
+            return delegate.eliminaReview(r);
+        }
+
+        @Override
+        public Integer eliminaReviewsDeUsuario(Cliente c) throws RemoteException {
+            return delegate.eliminaReviewsDeUsuario(c);
+        }
+
+        @Override
+        public Boolean insertaReviewFalsa(Local l, Integer puntuacion) throws RemoteException {
+            return delegate.insertaReviewFalsa(l, puntuacion);
+        }
+    }
+
+    /**
+     * Detecta automáticamente la dirección IP local de la interfaz de red activa
+     * (cable Ethernet o Wi-Fi), priorizando redes LAN (192.168.x.x o 10.x.x.x físicas)
+     * y descartando interfaces de bucle local, túneles VPN (NordVPN/Wireguard/OpenVPN)
+     * y contenedores virtuales (Docker/VMware/VirtualBox).
+     *
+     * @return Dirección IP IPv4 de red local, o {@code null} si no se encuentra.
+     */
+    private static String detectarIpLocal() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            if (interfaces == null) {
+                return null;
+            }
+            String ipRespaldo = null;
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                String nombreIface = iface.getName().toLowerCase();
+                
+                // Descartar loopback, interfaces caídas, túneles VPN y contenedores
+                if (iface.isLoopback() || !iface.isUp() || iface.isVirtual()
+                        || iface.isPointToPoint()
+                        || nombreIface.startsWith("nord")
+                        || nombreIface.startsWith("tun")
+                        || nombreIface.startsWith("tap")
+                        || nombreIface.startsWith("wg")
+                        || nombreIface.startsWith("docker")
+                        || nombreIface.startsWith("vbox")
+                        || nombreIface.startsWith("vmnet")
+                        || nombreIface.startsWith("br-")) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+                        String ip = addr.getHostAddress();
+                        // Priorizar rangos típicos de red física doméstica/universitaria
+                        if (ip.startsWith("192.168.") || nombreIface.startsWith("en") || nombreIface.startsWith("eth") || nombreIface.startsWith("wl")) {
+                            return ip;
+                        }
+                        if (ipRespaldo == null) {
+                            ipRespaldo = ip;
+                        }
+                    }
+                }
+            }
+            return ipRespaldo;
+        } catch (SocketException ignored) {
+        }
+        return null;
     }
 }

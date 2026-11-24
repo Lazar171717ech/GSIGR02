@@ -33,6 +33,7 @@ public class ClientHub {
     private static final long RETRY_DELAY_MS = 3000L;
 
     private ClientGateway gateway;
+    private String tagActual;
     private int numeroEjecucion = 0;
 
     /**
@@ -48,26 +49,63 @@ public class ClientHub {
 
     /**
      * Punto de entrada del cliente {@code ClientHub}.
+     * Permite recibir los parámetros tanto por argumentos de línea de comandos
+     * (args[0]=host, args[1]=puerto, args[2]=tag) como de forma interactiva por consola.
      *
-     * @param args Argumentos de línea de comandos (no utilizados).
+     * @param args Argumentos opcionales de línea de comandos.
      */
     public static void main(String[] args) {
-        new ClientHub().ejecutar();
+        new ClientHub().ejecutar(args);
     }
 
-    private void ejecutar() {
+    private void ejecutar(String[] args) {
         System.out.println("=== CLIENTE RMI: ClientHub ===");
         Scanner scanner = new Scanner(System.in);
 
-        String host = pedirTextoConDefecto(scanner, "Dirección del servidor [localhost]: ", DEFAULT_HOST);
-        int puerto = pedirPuerto(scanner, "Puerto del servidor [1099]: ", DEFAULT_PORT);
-        String tag = pedirTextoConDefecto(scanner, "Tag del objeto remoto [ClientGateway]: ", DEFAULT_TAG);
+        String host = null;
+        int puerto = -1;
+        String tag = null;
 
-        this.gateway = conectarConEspera(host, puerto, tag);
+        if (args != null && args.length >= 1 && !args[0].trim().isEmpty()) {
+            host = args[0].trim();
+        }
+        if (args != null && args.length >= 2 && !args[1].trim().isEmpty()) {
+            try {
+                int p = Integer.parseInt(args[1].trim());
+                if (p >= 1 && p <= 65535) {
+                    puerto = p;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        if (args != null && args.length >= 3 && !args[2].trim().isEmpty()) {
+            tag = args[2].trim();
+        }
+
+        if (host == null) {
+            host = pedirTextoConDefecto(scanner, "Dirección del servidor [localhost]: ", DEFAULT_HOST);
+        } else {
+            System.out.println("Dirección del servidor : " + host + " (por argumento)");
+        }
+
+        if (puerto == -1) {
+            puerto = pedirPuerto(scanner, "Puerto del servidor [1099]: ", DEFAULT_PORT);
+        } else {
+            System.out.println("Puerto del servidor    : " + puerto + " (por argumento)");
+        }
+
+        if (tag == null) {
+            tag = pedirTextoConDefecto(scanner, "Tag del objeto remoto [ClientGateway]: ", DEFAULT_TAG);
+        } else {
+            System.out.println("Tag del objeto remoto  : " + tag + " (por argumento)");
+        }
+
+        this.tagActual = tag;
+        this.gateway = conectarConEspera(scanner, host, puerto);
 
         boolean continuar = true;
         while (continuar) {
-            ejecutarBateriaPruebas(host, puerto, tag);
+            ejecutarBateriaPruebas(scanner, host, puerto);
             continuar = preguntarSiRepetir(scanner);
         }
 
@@ -114,28 +152,35 @@ public class ClientHub {
         return !"salir".equalsIgnoreCase(respuesta);
     }
 
-    private ClientGateway conectarConEspera(String host, int puerto, String tag) {
+    private ClientGateway conectarConEspera(Scanner scanner, String host, int puerto) {
         while (true) {
             try {
                 Registry registry = LocateRegistry.getRegistry(host, puerto);
-                Object obj = registry.lookup(tag);
+                Object obj = registry.lookup(tagActual);
                 if (!(obj instanceof ClientGateway)) {
-                    throw new ClassCastException("El objeto asociado a '" + tag + "' no implementa ClientGateway.");
+                    System.out.println("[ERROR] El objeto asociado al tag '" + tagActual
+                            + "' no implementa ClientGateway (es de tipo "
+                            + (obj != null ? obj.getClass().getName() : "null") + ").");
+                    tagActual = pedirTextoConDefecto(scanner, "Introduce un tag válido [ClientGateway]: ", DEFAULT_TAG);
+                    continue;
                 }
-                System.out.println("[CONECTADO] Enlace establecido con '" + tag + "' en " + host + ":" + puerto);
+                System.out.println("[CONECTADO] Enlace establecido con '" + tagActual + "' en " + host + ":" + puerto);
                 return (ClientGateway) obj;
-            } catch (RemoteException | NotBoundException | ClassCastException e) {
-                System.out.println("[AVISO] Servidor '" + tag + "' no disponible en "
-                        + host + ":" + puerto + " (" + e.getMessage() + "). Reintentando en 3 s...");
+            } catch (NotBoundException e) {
+                System.out.println("[ERROR] El tag '" + tagActual + "' no existe en el registro RMI de " + host + ":" + puerto + ".");
+                tagActual = pedirTextoConDefecto(scanner, "Introduce un tag que esté publicado en el servidor [ClientGateway]: ", DEFAULT_TAG);
+            } catch (RemoteException e) {
+                System.out.println("[AVISO] Servidor RMI no disponible en "
+                        + host + ":" + puerto + " (" + e.getMessage() + "). Esperando a que el servidor arranque...");
                 esperarReintento();
             }
         }
     }
 
-    private <T> T invocarConReconexion(String host, int puerto, String tag, OperacionRemota<T> op) {
+    private <T> T invocarConReconexion(Scanner scanner, String host, int puerto, OperacionRemota<T> op) {
         while (true) {
             if (gateway == null) {
-                gateway = conectarConEspera(host, puerto, tag);
+                gateway = conectarConEspera(scanner, host, puerto);
             }
             try {
                 return op.ejecutar(gateway);
@@ -156,42 +201,42 @@ public class ClientHub {
         }
     }
 
-    private void ejecutarBateriaPruebas(String host, int puerto, String tag) {
+    private void ejecutarBateriaPruebas(Scanner scanner, String host, int puerto) {
         numeroEjecucion++;
         System.out.println("\n--- Ejecución de funcionalidades de ClientGateway (#" + numeroEjecucion + ") ---");
 
         // 1. LocalFinder.getLocals
-        Local[] encontrados = invocarConReconexion(host, puerto, tag, g -> g.getLocals("bar"));
+        Local[] encontrados = invocarConReconexion(scanner, host, puerto, g -> g.getLocals("bar"));
         if (encontrados.length == 0) {
-            encontrados = invocarConReconexion(host, puerto, tag, g -> g.getLocals("a"));
+            encontrados = invocarConReconexion(scanner, host, puerto, g -> g.getLocals("a"));
         }
         System.out.println("1) getLocals(\"bar\") -> " + encontrados.length + " local(es): "
                 + Arrays.toString(encontrados));
 
-        Local[] sinResultados = invocarConReconexion(host, puerto, tag, g -> g.getLocals("LocalInexistenteXYZ"));
+        Local[] sinResultados = invocarConReconexion(scanner, host, puerto, g -> g.getLocals("LocalInexistenteXYZ"));
         System.out.println("   getLocals(\"LocalInexistenteXYZ\") -> longitud " + sinResultados.length);
 
         // 2. LocalFinder.getLocal
-        Local localExacto = invocarConReconexion(host, puerto, tag, g -> g.getLocal("  bar   txoko  "));
+        Local localExacto = invocarConReconexion(scanner, host, puerto, g -> g.getLocal("  bar   txoko  "));
         System.out.println("2) getLocal(\"  bar   txoko  \") -> "
                 + (localExacto != null ? localExacto.getNombre() : "null"));
 
-        Local localInexistente = invocarConReconexion(host, puerto, tag, g -> g.getLocal("NoExisteXYZ"));
+        Local localInexistente = invocarConReconexion(scanner, host, puerto, g -> g.getLocal("NoExisteXYZ"));
         System.out.println("   getLocal(\"NoExisteXYZ\") -> " + localInexistente);
 
         // 3. ClientGateway.mejorBar
-        Bar mejorBarPamplona = invocarConReconexion(host, puerto, tag, g -> g.mejorBar("Pamplona"));
+        Bar mejorBarPamplona = invocarConReconexion(scanner, host, puerto, g -> g.mejorBar("Pamplona"));
         System.out.println("3) mejorBar(\"Pamplona\") -> "
                 + (mejorBarPamplona != null ? mejorBarPamplona.getNombre() : "null"));
 
-        Bar mejorBarVacio = invocarConReconexion(host, puerto, tag, g -> g.mejorBar("CiudadSinBaresXYZ"));
+        Bar mejorBarVacio = invocarConReconexion(scanner, host, puerto, g -> g.mejorBar("CiudadSinBaresXYZ"));
         System.out.println("   mejorBar(\"CiudadSinBaresXYZ\") -> " + mejorBarVacio);
 
         // 4. ClientGateway.mejoresRestaurantes
-        Restaurante[] top5 = invocarConReconexion(host, puerto, tag, g -> g.mejoresRestaurantes("Pamplona", 5));
+        Restaurante[] top5 = invocarConReconexion(scanner, host, puerto, g -> g.mejoresRestaurantes("Pamplona", 5));
         System.out.println("4) mejoresRestaurantes(\"Pamplona\", 5) -> " + formatearRestaurantes(top5));
 
-        Restaurante[] top2 = invocarConReconexion(host, puerto, tag, g -> g.mejoresRestaurantes("Pamplona", 2));
+        Restaurante[] top2 = invocarConReconexion(scanner, host, puerto, g -> g.mejoresRestaurantes("Pamplona", 2));
         System.out.println("   mejoresRestaurantes(\"Pamplona\", 2) -> " + formatearRestaurantes(top2));
 
         // 5 y 6. ClientGateway.insertaReview y quitaReview
@@ -207,25 +252,25 @@ public class ClientHub {
                     "Prueba de insertaReview vía RMI (#" + numeroEjecucion + ")",
                     fechaVisita, LocalDate.now());
 
-            boolean insertada = invocarConReconexion(host, puerto, tag, g -> g.insertaReview(reviewNueva));
-            boolean duplicada = invocarConReconexion(host, puerto, tag, g -> g.insertaReview(reviewNueva));
+            boolean insertada = invocarConReconexion(scanner, host, puerto, g -> g.insertaReview(reviewNueva));
+            boolean duplicada = invocarConReconexion(scanner, host, puerto, g -> g.insertaReview(reviewNueva));
             System.out.println("5) insertaReview(ana, " + localObjetivo.getNombre() + ", " + fechaVisita + ") -> "
                     + insertada + " | reintento duplicado -> " + duplicada);
 
             Cliente inexistente = new Cliente("no_existe_999", "pw", LocalDate.of(1995, 1, 1));
             Review reviewInvalida = new Review(inexistente, localObjetivo, 4, "Inválida", fechaVisita, LocalDate.now());
-            boolean rechazada = invocarConReconexion(host, puerto, tag, g -> g.insertaReview(reviewInvalida));
+            boolean rechazada = invocarConReconexion(scanner, host, puerto, g -> g.insertaReview(reviewInvalida));
             System.out.println("   insertaReview(cliente inexistente) -> " + rechazada);
 
-            boolean quitada = invocarConReconexion(host, puerto, tag, g -> g.quitaReview(reviewNueva));
-            boolean quitadaOtraVez = invocarConReconexion(host, puerto, tag, g -> g.quitaReview(reviewNueva));
+            boolean quitada = invocarConReconexion(scanner, host, puerto, g -> g.quitaReview(reviewNueva));
+            boolean quitadaOtraVez = invocarConReconexion(scanner, host, puerto, g -> g.quitaReview(reviewNueva));
             System.out.println("6) quitaReview(nueva) -> " + quitada + " | segundo intento -> " + quitadaOtraVez);
 
             Bar gaucho = new Bar("Bar Gaucho", new Direccion("Pamplona", "Navarra", "Calle Espoz y Mina", 7), "Famoso");
             Review conContestacion = new Review(
                     ana, gaucho, 5, "Con contestación",
                     LocalDate.of(2026, 10, 10), LocalDate.of(2026, 10, 11));
-            boolean quitadaConResp = invocarConReconexion(host, puerto, tag, g -> g.quitaReview(conContestacion));
+            boolean quitadaConResp = invocarConReconexion(scanner, host, puerto, g -> g.quitaReview(conContestacion));
             System.out.println("   quitaReview(review con contestación en Bar Gaucho) -> " + quitadaConResp);
         } else {
             System.out.println("5-6) No se encontraron locales en el servidor para probar insertaReview/quitaReview.");
